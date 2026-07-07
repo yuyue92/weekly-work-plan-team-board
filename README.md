@@ -1,6 +1,6 @@
 # Weekly Work Plan - Team Board
 
-Vue 3 + Vite + Supabase 版本。支持账号登录、管理员/员工角色权限、云端数据存储。
+Vue 3 + Vite + Supabase 版本。支持账号登录、管理员/员工角色权限、云端数据存储。[https://weekly-work-plan-team-board.vercel.app/login]
 
 ## 目录结构
 
