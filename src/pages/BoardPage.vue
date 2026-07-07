@@ -2,6 +2,11 @@
   <div class="container">
     <header class="app-header">
       <div class="app-hader-sub">
+        <div class="logo">
+          <span class="logo-pccw">PCCW</span>
+          <span class="logo-solutions">Solutions</span>
+          <span class="logo-registered">®</span>
+        </div>
         <h1 class="app-title">Weekly Work Plan</h1>
         <p class="app-subtitle">Team board version: Pending / Processing / Done, task-level half-day schedule.</p>
       </div>

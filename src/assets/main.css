@@ -47,6 +47,40 @@
       gap: 30px;
     }
 
+    .app-header .logo {
+      position: relative;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      padding-right: 12px;
+      color: #0b5cab;
+      white-space: nowrap;
+    }
+
+    .logo-pccw {
+      font-size: 36px;
+      line-height: 1;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -1.2px;
+    }
+
+    .logo-solutions {
+      font-size: 26px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .logo-registered {
+      position: absolute;
+      top: 5px;
+      right: 0;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
     .app-title {
       margin: 0;
       font-size: 30px;
@@ -995,3 +1029,59 @@
     }
     .team-block-members { display: flex; flex-wrap: wrap; gap: 6px; }
     .text-muted { color: var(--muted); }
+
+    .auth-password-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .auth-password-input {
+      padding-right: 44px;
+    }
+
+    .auth-password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 2px;
+      z-index: 2;
+      width: 40px;
+      height: calc(100% - 4px);
+      padding: 0;
+      border: 0;
+      border-radius: 0 6px 6px 0;
+      background: transparent;
+      color: #718096;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateY(-50%);
+      cursor: pointer;
+      transition:
+        color .15s ease,
+        background-color .15s ease;
+    }
+
+    .auth-password-toggle:hover {
+      color: #0d6efd;
+      background: #f1f6ff;
+    }
+
+    .auth-password-toggle:focus-visible {
+      outline: 2px solid rgba(13, 110, 253, .35);
+      outline-offset: -2px;
+    }
+
+    .auth-password-toggle:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .auth-password-toggle svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }

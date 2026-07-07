@@ -26,7 +26,32 @@
         </div>
         <div class="form-group">
           <label>密码</label>
-          <input class="form-control" type="password" v-model="password" @keyup.enter="doLogin" />
+          <div class="auth-password-wrap">
+            <input class="form-control" :type="showPassword ? 'text' : 'password'" v-model="password" @keyup.enter="doLogin" />
+            <button
+              type="button"
+              class="auth-password-toggle"
+              @click="showPassword = !showPassword">
+              <!-- 隐藏密码 -->
+              <svg
+                v-if="showPassword"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M3 3l18 18M10.6 10.7a2 2 0 002.7 2.7M9.9 4.2A10.6 10.6 0 0112 4c5.5 0 9 5 9 5a16 16 0 01-3.1 3.6M6.2 6.2C4.2 7.5 3 9 3 9s3.5 5 9 5a10.8 10.8 0 004-.8" />
+              </svg>
+  
+              <!-- 显示密码 -->
+              <svg
+                v-else
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M3 12s3.5-5 9-5 9 5 9 5-3.5 5-9 5-9-5-9-5z" />
+                <circle cx="12" cy="12" r="2.5" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div v-if="errorMsg" class="auth-error">{{ errorMsg }}</div>
         <button class="btn btn-primary auth-btn" :disabled="submitting" @click="doLogin">
@@ -46,7 +71,32 @@
         </div>
         <div class="form-group">
           <label>密码（至少 6 位）</label>
-          <input class="form-control" type="password" v-model="password" />
+          <div class="auth-password-wrap">
+            <input class="form-control" :type="showPassword ? 'text' : 'password'" v-model="password" />
+            <button
+              type="button"
+              class="auth-password-toggle"
+              @click="showPassword = !showPassword">
+              <!-- 隐藏密码 -->
+              <svg
+                v-if="showPassword"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M3 3l18 18M10.6 10.7a2 2 0 002.7 2.7M9.9 4.2A10.6 10.6 0 0112 4c5.5 0 9 5 9 5a16 16 0 01-3.1 3.6M6.2 6.2C4.2 7.5 3 9 3 9s3.5 5 9 5a10.8 10.8 0 004-.8" />
+              </svg>
+  
+              <!-- 显示密码 -->
+              <svg
+                v-else
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M3 12s3.5-5 9-5 9 5 9 5-3.5 5-9 5-9-5-9-5z" />
+                <circle cx="12" cy="12" r="2.5" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div v-if="errorMsg"   class="auth-error">{{ errorMsg }}</div>
         <div v-if="successMsg" class="auth-success">{{ successMsg }}</div>
@@ -73,6 +123,7 @@ const displayName = ref("");
 const errorMsg    = ref("");
 const successMsg  = ref("");
 const submitting  = ref(false);
+const showPassword = ref(false)
 
 function clearMsg() {
   errorMsg.value   = "";
