@@ -23,7 +23,6 @@
       :week-options="weekOptions"
       :start-date-display="startDateDisplay"
       :end-date-display="endDateDisplay"
-      :save-status-text="saveStatusText"
       :is-admin="isAdmin"
       @team-change="onTeamChange"
       @year-change="onYearChange"
@@ -32,7 +31,7 @@
       @clear-week="clearCurrentWeek"
     />
 
-    <div v-if="boardLoading" class="board-loading">加载中...</div>
+    <div v-if="boardLoading" class="board-loading">Loading...</div>
 
     <BoardTable
       v-else
@@ -84,7 +83,7 @@ const { currentUser, isAdmin, signOut } = useAuth();
 const {
   STATUS_LABELS,
   state, weekOptions, teamsData, currentMembers,
-  boardLoading, saveStatusText,
+  boardLoading,
   toastMessage, toastVisible,
   modalOpen, modalContext, modalDraft, modalSaveHint, modalSaving,
   boardTitle, startDateDisplay, endDateDisplay,

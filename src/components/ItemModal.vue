@@ -10,7 +10,7 @@
           <h3 id="itemModalTitle" class="modal-title">Edit Work Item</h3>
           <div class="modal-subtitle">{{ subtitle }}</div>
         </div>
-        <button class="btn btn-light" type="button" :disabled="saving" @click="$emit('close')">关闭</button>
+        <button class="btn btn-light" type="button" :disabled="saving" @click="$emit('close')">Close</button>
       </div>
 
       <div class="modal-body">
@@ -73,7 +73,7 @@
 
         <div class="tasks-header">
           <div class="tasks-title">Tasks</div>
-          <button class="btn btn-outline-primary btn-sm" type="button" @click="$emit('add-task')">＋ 新增 Task</button>
+          <button class="btn btn-outline-primary btn-sm" type="button" @click="$emit('add-task')">＋ Add Task</button>
         </div>
 
         <div class="tasks-table-wrap">
@@ -101,7 +101,7 @@
               </template>
               <tr v-else>
                 <td colspan="5" style="text-align:center;color:#94a3b8;padding:18px;">
-                  暂无 task，点击右上角 "＋ 新增 Task"。
+                  No tasks yet. Click “＋ Add Task” in the upper-right corner.
                 </td>
               </tr>
             </tbody>
@@ -115,7 +115,7 @@
           type="button"
           :disabled="saving"
           @click="$emit('delete-item')"
-        >删除 Work Item</button>
+        >Delete Work Item</button>
         <div class="actions">
           <span class="save-status">{{ saving ? "保存中..." : saveHint }}</span>
           <button
@@ -123,7 +123,7 @@
             type="button"
             :disabled="saving"
             @click="$emit('save')"
-          >保存并关闭</button>
+          >Save &amp; Close</button>
         </div>
       </div>
     </div>

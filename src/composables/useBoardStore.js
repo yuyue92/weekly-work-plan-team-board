@@ -29,7 +29,6 @@ export function useBoardStore() {
   const boardData     = ref({});
   const boardLoading  = ref(false);
 
-  const saveStatusText = ref("尚未保存");
   const toastMessage   = ref("");
   const toastVisible   = ref(false);
   let toastTimer       = null;
@@ -47,10 +46,6 @@ export function useBoardStore() {
     toastVisible.value = true;
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toastVisible.value = false; }, 1800);
-  }
-
-  function updateSaveStatus(prefix) {
-    saveStatusText.value = `${prefix} ${new Date().toLocaleTimeString()}`;
   }
 
   // ── 初始化：拉取 teams 列表 ───────────────────────
@@ -153,7 +148,6 @@ export function useBoardStore() {
     });
     boardData.value = newBoard;
     boardLoading.value = false;
-    updateSaveStatus("已载入");
   }
 
   // ── 获取某成员某状态的 items（供模板调用）────────
@@ -403,7 +397,7 @@ export function useBoardStore() {
     // 状态
     state, weekOptions, teamsData, currentMembers,
     boardData, boardLoading,
-    saveStatusText, toastMessage, toastVisible,
+    toastMessage, toastVisible,
     modalOpen, modalContext, modalDraft, modalSaveHint, modalSaving,
     boardTitle, startDateDisplay, endDateDisplay,
     // 方法

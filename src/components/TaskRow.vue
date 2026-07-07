@@ -51,7 +51,7 @@
       ></textarea>
     </td>
     <td class="task-actions-col">
-      <button class="btn btn-outline-danger btn-sm" type="button" @click="$emit('delete', index)">删除</button>
+      <button class="btn btn-outline-danger btn-sm" type="button" @click="$emit('delete', index)">Delete</button>
     </td>
   </tr>
 </template>

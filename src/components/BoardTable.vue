@@ -3,11 +3,6 @@
     <div class="board-header">
       <div>
         <h2 class="board-title">{{ boardTitle }}</h2>
-        <div class="board-hint">
-          点击卡片可编辑。
-          <template v-if="isAdmin">管理员可拖拽移动任意 Work Item。</template>
-          <template v-else>仅可编辑自己的 Work Item。</template>
-        </div>
       </div>
     </div>
     <div class="card-body">

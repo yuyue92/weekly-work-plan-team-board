@@ -16,8 +16,8 @@
         class="btn btn-light btn-sm"
         type="button"
         @click.stop="$emit('edit', memberId, status, item.id)"
-      >编辑</button>
-      <span v-else class="tag">只读</span>
+      >Edit</button>
+      <span v-else class="tag">Readonly</span>
     </div>
     <div class="item-meta">
       <span class="tag" :class="priorityClass">{{ item.priority || "Low" }}</span>

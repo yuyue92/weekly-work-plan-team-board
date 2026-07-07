@@ -45,14 +45,13 @@
         <div class="form-group actions-group">
           <label>&nbsp;</label>
           <div class="actions">
-            <button class="btn btn-outline-primary" type="button" @click="$emit('export')">导出 JSON</button>
+            <button class="btn btn-outline-primary" type="button" @click="$emit('export')">Export JSON</button>
             <button
               v-if="isAdmin"
               class="btn btn-outline-danger"
               type="button"
               @click="$emit('clear-week')"
             >清空当前周</button>
-            <span class="save-status">{{ saveStatusText }}</span>
           </div>
         </div>
       </div>
@@ -67,7 +66,6 @@ defineProps({
   weekOptions:      { type: Array,   required: true },
   startDateDisplay: { type: String,  default: "" },
   endDateDisplay:   { type: String,  default: "" },
-  saveStatusText:   { type: String,  default: "" },
   isAdmin:          { type: Boolean, default: false }
 });
 defineEmits(["team-change", "year-change", "week-change", "export", "clear-week"]);
