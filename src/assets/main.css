@@ -520,8 +520,6 @@
       position: fixed;
       width: 420px;
       max-width: min(460px, 84vw);
-      max-height: 60vh;
-      overflow-y: auto;
       z-index: 9999;
       background: #ffffff;
       color: #212529;
@@ -532,11 +530,15 @@
       cursor: default;
       pointer-events: none;
     }
+    .item-preview-scroll {
+      max-height: 60vh;
+      overflow-y: auto;
+    }
 
     .item-preview::before {
       content: "";
       position: absolute;
-      left: 22px;
+      left: var(--arrow-left, 22px);
       top: -7px;
       width: 12px;
       height: 12px;
@@ -544,6 +546,12 @@
       border-left: 1px solid #dee2e6;
       border-top: 1px solid #dee2e6;
       transform: rotate(45deg);
+    }
+    /* 预览框在卡片上方时：三角移到底部朝下 */
+    .item-preview.is-flipped::before {
+      top: auto;
+      bottom: -7px;
+      transform: rotate(225deg);
     }
 
     .item-preview.is-preview-visible { display: block; }

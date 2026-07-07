@@ -31,30 +31,32 @@
     <div
       ref="previewEl"
       class="item-preview"
-      :class="{ 'is-preview-visible': previewVisible }"
-      :style="previewStyle"
+      :class="{ 'is-preview-visible': previewVisible, 'is-flipped': arrowFlipped }"
+      :style="{ ...previewStyle, '--arrow-left': arrowLeft + 'px' }"
     >
-      <div class="preview-title">{{ item.work_item || "Untitled Work Item" }}</div>
-      <template v-if="!item.tasks.length">
-        <div class="preview-task">暂无 task，点击卡片可新增。</div>
-      </template>
-      <template v-else>
-        <div class="preview-task" v-for="task in item.tasks.slice(0, 4)" :key="task.id || task.task_name">
-          <b>{{ task.task_name || "Untitled Task" }}</b>
-          <div>{{ truncate(task.description || task.remark_blocker || "", 80) }}</div>
-          <div class="preview-slots">
-            <span
-              v-for="(key, idx) in PREVIEW_SLOT_KEYS"
-              :key="key"
-              class="preview-slot"
-              :class="{ checked: task.slots?.[key] }"
-            >{{ PREVIEW_SLOT_LABELS[idx] }}</span>
+      <div class="item-preview-scroll">
+        <div class="preview-title">{{ item.work_item || "Untitled Work Item" }}</div>
+        <template v-if="!item.tasks.length">
+          <div class="preview-task">暂无 task，点击卡片可新增。</div>
+        </template>
+        <template v-else>
+          <div class="preview-task" v-for="task in item.tasks.slice(0, 4)" :key="task.id || task.task_name">
+            <b>{{ task.task_name || "Untitled Task" }}</b>
+            <div>{{ truncate(task.description || task.remark_blocker || "", 80) }}</div>
+            <div class="preview-slots">
+              <span
+                v-for="(key, idx) in PREVIEW_SLOT_KEYS"
+                :key="key"
+                class="preview-slot"
+                :class="{ checked: task.slots?.[key] }"
+              >{{ PREVIEW_SLOT_LABELS[idx] }}</span>
+            </div>
           </div>
-        </div>
-        <div class="preview-task" v-if="item.tasks.length > 4">
-          还有 {{ item.tasks.length - 4 }} 条 task...
-        </div>
-      </template>
+          <div class="preview-task" v-if="item.tasks.length > 4">
+            还有 {{ item.tasks.length - 4 }} 条 task...
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -84,6 +86,9 @@ const priorityClass = computed(() =>
 );
 const checkedCount = computed(() => countCheckedSlots(props.item));
 
+const arrowLeft = ref(22);
+const arrowFlipped = ref(false);  // true = 预览在卡片上方，三角在底部
+
 // 计算预览框 fixed 坐标，确保不超出视口
 async function showPreview(event) {
   previewVisible.value = true;
@@ -104,7 +109,8 @@ async function showPreview(event) {
   let left = card.left;
 
   // 底部放不下 → 改为卡片上方
-  if (top + ph > vh - 8) top = card.top - ph - GAP;
+  const flipped = top + ph > vh - 8;
+  if (flipped) top = card.top - ph - GAP;
   // 顶部也放不下 → 贴视口顶部
   if (top < 8) top = 8;
 
@@ -115,6 +121,10 @@ async function showPreview(event) {
 
   previewStyle.top  = `${Math.round(top)}px`;
   previewStyle.left = `${Math.round(left)}px`;
+  // 三角指向卡片水平中心
+  const cardCenterX = card.left + card.width / 2;
+  arrowLeft.value = Math.round(Math.min(Math.max(cardCenterX - left, 16), pw - 24));
+  arrowFlipped.value = flipped;
 }
 
 function hidePreview() {

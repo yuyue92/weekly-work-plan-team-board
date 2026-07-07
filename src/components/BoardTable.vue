@@ -59,7 +59,7 @@
                   />
 
                   <div v-if="!getMemberItems(member.userId, status).length" class="empty-note">
-                    暂无 {{ STATUS_LABELS[status] }} item
+                    No {{ STATUS_LABELS[status] }} items
                   </div>
                 </div>
               </td>
