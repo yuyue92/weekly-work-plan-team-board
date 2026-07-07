@@ -98,7 +98,7 @@ async function doRegister() {
   const { error } = await signUp(email.value.trim(), password.value, displayName.value.trim());
   submitting.value = false;
   if (error) { errorMsg.value = error.message; return; }
-  successMsg.value = "注册成功！请查收邮件确认链接，然后回来登录。";
+  successMsg.value = "注册成功！请切换到「登录」页面直接登录。";
   password.value   = "";
 }
 </script>

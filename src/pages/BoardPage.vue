@@ -45,10 +45,6 @@
       @edit-item="openItemModal"
       @drop-item="handleItemDrop"
     />
-
-    <p class="footer-note">
-      数据存储于 Supabase 云端。Team 与成员管理请在 Supabase 控制台操作。
-    </p>
   </div>
 
   <ItemModal
