@@ -4,7 +4,8 @@ import {
   STATUS_KEYS, STATUS_LABELS, SLOT_KEYS
 } from "../constants/index.js";
 import {
-  buildWorkWeeks, getDefaultWeekKey, normalizeYear, formatTimestampForFile
+  buildWorkWeeks, getDefaultWeekKey, normalizeYear, formatTimestampForFile,
+  addDays, parseDate, formatDate
 } from "../utils/date.js";
 import {
   createEmptyItem, createEmptyTask,
@@ -40,12 +41,113 @@ export function useBoardStore() {
   const modalSaveHint = ref("编辑内容不会自动保存");
   const modalSaving   = ref(false);
 
+  // 管理员按成员复制周数据
+  const importState = reactive({
+    ownerId:       "",
+    sourceYear:    state.year,
+    sourceWeekKey: ""
+  });
+  const importWeekOptions = ref([]);
+  const importSaving      = ref(false);
+
   // ── 工具 ──────────────────────────────────────────
   function showToast(msg) {
     toastMessage.value = msg;
     toastVisible.value = true;
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toastVisible.value = false; }, 1800);
+  }
+
+  function findWeekByStartDate(startDate, preferredYear) {
+    const dateYear = parseDate(startDate).getFullYear();
+    const years = [...new Set([
+      Number(preferredYear),
+      dateYear,
+      Number(preferredYear) - 1,
+      Number(preferredYear) + 1
+    ])];
+
+    for (const year of years) {
+      const options = buildWorkWeeks(year);
+      const week = options.find(item => item.startDate === startDate);
+      if (week) return { year, options, week };
+    }
+
+    return null;
+  }
+
+  // 当前目标周变化后，默认把来源周定位到上一自然工作周
+  function resetImportDefaults() {
+    if (!membersData.value.some(member => member.userId === importState.ownerId)) {
+      importState.ownerId = membersData.value[0]?.userId || "";
+    }
+
+    const targetWeek = weekOptions.value.find(
+      week => week.key === state.weekKey
+    );
+
+    if (!targetWeek) {
+      importState.sourceYear = state.year;
+      importWeekOptions.value = buildWorkWeeks(state.year);
+      importState.sourceWeekKey = importWeekOptions.value[0]?.key || "";
+      return;
+    }
+
+    const previousStartDate = formatDate(
+      addDays(parseDate(targetWeek.startDate), -7)
+    );
+    const matched = findWeekByStartDate(previousStartDate, state.year);
+
+    if (matched) {
+      importState.sourceYear = matched.year;
+      importWeekOptions.value = matched.options;
+      importState.sourceWeekKey = matched.week.key;
+      return;
+    }
+
+    importState.sourceYear = state.year;
+    importWeekOptions.value = buildWorkWeeks(state.year);
+    importState.sourceWeekKey = importWeekOptions.value[0]?.key || "";
+  }
+
+  function onImportOwnerChange(userId) {
+    importState.ownerId = userId;
+  }
+
+  function onImportSourceYearChange(rawValue) {
+    const previousWeekNo = Number(
+      String(importState.sourceWeekKey).split("-W")[1]
+    );
+    const year = normalizeYear(rawValue);
+    const options = buildWorkWeeks(year);
+
+    importState.sourceYear = year;
+    importWeekOptions.value = options;
+    importState.sourceWeekKey =
+      options.find(week => week.weekNo === previousWeekNo)?.key ||
+      options[0]?.key ||
+      "";
+  }
+
+  function onImportSourceWeekChange(weekKey) {
+    importState.sourceWeekKey = weekKey;
+  }
+
+  function calendarDayDiff(fromDate, toDate) {
+    const from = parseDate(fromDate);
+    const to = parseDate(toDate);
+    const fromUtc = Date.UTC(
+      from.getFullYear(),
+      from.getMonth(),
+      from.getDate()
+    );
+    const toUtc = Date.UTC(
+      to.getFullYear(),
+      to.getMonth(),
+      to.getDate()
+    );
+
+    return Math.round((toUtc - fromUtc) / 86400000);
   }
 
   // ── 初始化：拉取 teams 列表 ───────────────────────
@@ -81,7 +183,12 @@ export function useBoardStore() {
     // 年/周重新初始化
     const weeks = buildWorkWeeks(state.year);
     weekOptions.value = weeks;
-    if (!state.weekKey) state.weekKey = getDefaultWeekKey(state.year, weeks);
+    
+    if (!weeks.some(week => week.key === state.weekKey)) {
+      state.weekKey = getDefaultWeekKey(state.year, weeks);
+    }
+
+    resetImportDefaults();
     await loadBoard();
   }
 
@@ -91,11 +198,13 @@ export function useBoardStore() {
     const weeks = buildWorkWeeks(y);
     weekOptions.value = weeks;
     state.weekKey = getDefaultWeekKey(y, weeks);
+    resetImportDefaults();
     loadBoard();
   }
 
   function onWeekChange(weekKey) {
     state.weekKey = weekKey;
+    resetImportDefaults();
     loadBoard();
   }
 
@@ -354,6 +463,78 @@ export function useBoardStore() {
     showToast("当前周已清空");
   }
 
+  // ── 按成员复制某一周到当前周（仅 admin）──────────
+  async function copySelectedMemberWeek() {
+    if (boardLoading.value || importSaving.value) return;
+
+    const member = membersData.value.find(
+      item => item.userId === importState.ownerId
+    );
+    const sourceWeek = importWeekOptions.value.find(
+      item => item.key === importState.sourceWeekKey
+    );
+    const targetWeek = weekOptions.value.find(
+      item => item.key === state.weekKey
+    );
+
+    if (!member || !sourceWeek || !targetWeek) {
+      alert("请选择来源周和需要导入的成员。");
+      return;
+    }
+
+    if (
+      Number(importState.sourceYear) === Number(state.year) &&
+      importState.sourceWeekKey === state.weekKey
+    ) {
+      alert("来源周不能与当前目标周相同。");
+      return;
+    }
+
+    const targetItemCount = STATUS_KEYS.reduce(
+      (total, status) =>
+        total + getMemberItems(member.userId, status).length,
+      0
+    );
+
+    const replaceExisting = targetItemCount > 0;
+    const message = replaceExisting
+      ? `「${member.displayName}」在当前周已有 ${targetItemCount} 条 Work Item。继续后将先清空该成员当前周数据，再从 ${sourceWeek.label} 导入，确定继续吗？`
+      : `确定把「${member.displayName}」的 ${sourceWeek.label} 数据复制到当前周吗？`;
+
+    if (!confirm(message)) return;
+
+    importSaving.value = true;
+
+    try {
+      const { data, error } = await supabase.rpc("copy_member_week", {
+        p_team_id:          state.teamId,
+        p_owner_id:         member.userId,
+        p_source_year:      Number(importState.sourceYear),
+        p_source_week_key:  importState.sourceWeekKey,
+        p_target_year:      Number(state.year),
+        p_target_week_key:  state.weekKey,
+        p_shift_days:       calendarDayDiff(
+          sourceWeek.startDate,
+          targetWeek.startDate
+        ),
+        p_replace_existing: replaceExisting
+      });
+
+      if (error) throw error;
+
+      await loadBoard();
+      showToast(
+        `已为 ${member.displayName} 导入 ${
+          Number(data?.copied_work_items || 0)
+        } 条 Work Item`
+      );
+    } catch (err) {
+      alert("导入失败：" + (err.message || String(err)));
+    } finally {
+      importSaving.value = false;
+    }
+  }
+
   // ── JSON 导出（备份）─────────────────────────────
   function exportJson() {
     const exportData = {
@@ -399,6 +580,7 @@ export function useBoardStore() {
     boardData, boardLoading,
     toastMessage, toastVisible,
     modalOpen, modalContext, modalDraft, modalSaveHint, modalSaving,
+    importState, importWeekOptions, importSaving,
     boardTitle, startDateDisplay, endDateDisplay,
     // 方法
     init,
@@ -409,6 +591,10 @@ export function useBoardStore() {
     saveModalAndClose, deleteCurrentItem,
     addTaskToCurrentItem, deleteTaskFromCurrentItem,
     handleItemDrop, clearCurrentWeek,
+    onImportOwnerChange,
+    onImportSourceYearChange,
+    onImportSourceWeekChange,
+    copySelectedMemberWeek,
     exportJson,
     showToast
   };

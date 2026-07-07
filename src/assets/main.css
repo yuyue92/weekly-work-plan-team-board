@@ -98,12 +98,143 @@
       gap: 4px;
       margin-bottom: 15px;
     }
+    .toolbar > .form-group {margin-bottom: 0;}
 
     .toolbar .team-group { flex: 0 0 200px; }
     .toolbar .year-group { flex: 0 0 115px; }
-    .toolbar .week-group { flex: 0 0 240px; }
+    .toolbar .week-group { flex: 0 0 340px; }
     .toolbar .date-group { flex: 0 0 120px; }
     .toolbar .actions-group { flex: 1 1 400px; }
+
+    .week-switcher {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) 34px;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .week-select {
+      min-width: 0;
+      height: 34px;
+    }
+
+    .week-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 1px solid #b6d4fe;
+      border-radius: 9px;
+      background: #ffffff;
+      color: var(--primary);
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.08s ease;
+    }
+
+    .week-nav-btn:hover:not(:disabled) {
+      background: #e7f1ff;
+      border-color: var(--primary);
+    }
+
+    .week-nav-btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .week-nav-btn:focus-visible {
+      outline: none;
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+
+    .week-nav-btn:disabled {
+      color: #94a3b8;
+      background: #f8fafc;
+      border-color: #dee2e6;
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
+    .import-panel {
+      /* 即使误放在 .toolbar 内，也强制独占完整一行并排到最后 */
+      flex: 0 0 100%;
+      order: 999;
+      width: 100%;
+      min-width: 0;
+      margin-top: 10px;
+      padding: 14px 16px 16px;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
+    .import-panel-heading {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-bottom: 12px;
+      color: #102a43;
+      font-size: 14px;
+    }
+    .import-panel-heading strong {
+      flex-shrink: 0;
+      font-size: 15px;
+    }
+
+    .import-panel-heading span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .import-controls {
+      display: grid;
+      grid-template-columns: 340px 200px 120px 240px 100px;
+      align-items: end;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .import-controls .form-group {
+      margin-bottom: 0;
+      min-width: 0;
+    }
+    
+    .import-member-group {
+      min-width: 0;
+    }
+    
+    .import-year-group {
+      min-width: 0;
+    }
+    
+    .import-week-group {
+      min-width: 0;
+    }
+
+    .import-action-group {
+      min-width: 112px;
+    }
+
+    .import-action-group .btn {
+      width: 100%;
+      min-height: 34px;
+    }
+
+    .import-controls .form-control,
+    .import-controls .form-select {
+      height: 34px;
+    }
 
     label {
       font-weight: 650;
@@ -609,6 +740,23 @@
 
     .toast.show { opacity: 1; transform: translateY(0); }
 
+    @media (max-width: 1200px) {
+      .import-controls {
+        grid-template-columns:
+          minmax(180px, 1fr)
+          120px
+          minmax(260px, 1.5fr);
+      }
+
+      .import-action-group {
+        grid-column: 1 / -1;
+      }
+
+      .import-action-group .btn {
+        width: auto;
+      }
+    }
+
     @media (max-width: 960px) {
       .app-header { flex-direction: column; }
       .toolbar .team-group,
@@ -616,12 +764,36 @@
       .toolbar .week-group,
       .toolbar .date-group,
       .toolbar .actions-group { flex: 1 1 220px; }
+      .import-controls {
+        grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
+      }
+      .import-week-group {
+        grid-column: 1 / -1;
+      }
       .workitem-grid { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 620px) {
       .container { padding: 20px 12px 34px; }
       .toolbar { flex-direction: column; align-items: stretch; }
+      .import-panel {padding: 12px;}
+      .import-panel-heading {display: block;}
+      .import-panel-heading span {
+        display: block;
+        margin-top: 5px;
+        line-height: 1.5;
+      }
+
+      .import-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .import-week-group,
+      .import-action-group {
+        grid-column: auto;
+      }
+
+      .import-action-group .btn {width: 100%;}
       .app-title { font-size: 24px; }
       .workitem-grid { grid-template-columns: 1fr; }
       .modal-backdrop { padding: 10px; }

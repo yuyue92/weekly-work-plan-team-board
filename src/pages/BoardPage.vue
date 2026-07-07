@@ -21,6 +21,10 @@
       :teams="teamsData"
       :state="state"
       :week-options="weekOptions"
+      :members="currentMembers"
+      :import-state="importState"
+      :import-week-options="importWeekOptions"
+      :import-saving="importSaving"
       :start-date-display="startDateDisplay"
       :end-date-display="endDateDisplay"
       :is-admin="isAdmin"
@@ -29,6 +33,10 @@
       @week-change="onWeekChange"
       @export="exportJson"
       @clear-week="clearCurrentWeek"
+      @import-owner-change="onImportOwnerChange"
+      @import-source-year-change="onImportSourceYearChange"
+      @import-source-week-change="onImportSourceWeekChange"
+      @copy-member-week="copySelectedMemberWeek"
     />
 
     <div v-if="boardLoading" class="board-loading">Loading...</div>
@@ -86,6 +94,7 @@ const {
   boardLoading,
   toastMessage, toastVisible,
   modalOpen, modalContext, modalDraft, modalSaveHint, modalSaving,
+  importState, importWeekOptions, importSaving,
   boardTitle, startDateDisplay, endDateDisplay,
   init,
   onTeamChange, onYearChange, onWeekChange,
@@ -94,6 +103,10 @@ const {
   saveModalAndClose, deleteCurrentItem,
   addTaskToCurrentItem, deleteTaskFromCurrentItem,
   handleItemDrop, clearCurrentWeek,
+  onImportOwnerChange,
+  onImportSourceYearChange,
+  onImportSourceWeekChange,
+  copySelectedMemberWeek,
   exportJson
 } = useBoardStore();
 
