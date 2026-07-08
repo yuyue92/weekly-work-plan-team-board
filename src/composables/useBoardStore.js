@@ -29,6 +29,9 @@ const state = reactive({
 const boardData     = ref({});
 const boardLoading  = ref(false);
 
+// 当前登录用户没有可用 Team 时的提示
+const noTeamMessage = ref("");
+
 const toastMessage   = ref("");
 const toastVisible   = ref(false);
 let toastTimer       = null;
@@ -151,13 +154,81 @@ export function useBoardStore() {
     return Math.round((toUtc - fromUtc) / 86400000);
   }
 
+  function resetBoardState() {
+    state.teamId = null;
+    state.teamName = "";
+    teamsData.value = [];
+    membersData.value = [];
+    boardData.value = {};
+    weekOptions.value = [];
+    importState.ownerId = "";
+    importWeekOptions.value = [];
+  }
+
+  // ── 初始化：按角色拉取 teams 列表 ───────────────────────
+  // admin：可看全部 team
+  // staff：只看自己加入的 team；未加入任何 team 时给出提示
+
   // ── 初始化：拉取 teams 列表 ───────────────────────
-  async function init() {
-    const { data, error } = await supabase.from("teams").select("id, name").order("name");
-    if (error) { console.error("拉取 teams 失败", error); return; }
-    teamsData.value = data || [];
-    if (teamsData.value.length) {
-      await onTeamChange(teamsData.value[0].id);
+  async function init(authContext = {}) {
+    boardLoading.value = true;
+    noTeamMessage.value = "";
+    resetBoardState();
+
+    const userId = authContext.userId;
+    const isAdmin = Boolean(authContext.isAdmin);
+
+    try {
+      let teams = [];
+
+      if (isAdmin) {
+        const { data, error } = await supabase
+          .from("teams")
+          .select("id, name")
+          .order("name");
+
+        if (error) throw error;
+        teams = data || [];
+      } else {
+        if (!userId) {
+          noTeamMessage.value = "无法识别当前登录用户，请重新登录。";
+          return;
+        }
+
+        const { data: memberships, error: membershipErr } = await supabase
+          .from("team_users")
+          .select("team_id")
+          .eq("user_id", userId);
+
+        if (membershipErr) throw membershipErr;
+
+        const teamIds = [...new Set((memberships || []).map(row => row.team_id).filter(Boolean))];
+
+        if (!teamIds.length) {
+          noTeamMessage.value = "你的账号尚未加入任何 Team，请联系管理员分配 Team。";
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("teams")
+          .select("id, name")
+          .in("id", teamIds)
+          .order("name");
+
+        if (error) throw error;
+        teams = data || [];
+      }
+
+      teamsData.value = teams;
+
+      if (teamsData.value.length) {
+        await onTeamChange(teamsData.value[0].id);
+      }
+    } catch (error) {
+      console.error("初始化 Team 失败", error);
+      noTeamMessage.value = "加载 Team 失败，请刷新页面或联系管理员。";
+    } finally {
+      boardLoading.value = false;
     }
   }
 
@@ -565,7 +636,7 @@ export function useBoardStore() {
     STATUS_KEYS, STATUS_LABELS,
     // 状态
     state, weekOptions, teamsData, currentMembers,
-    boardData, boardLoading,
+    boardData, boardLoading, noTeamMessage,
     toastMessage, toastVisible,
     modalOpen, modalContext, modalDraft, modalSaveHint, modalSaving,
     importState, importWeekOptions, importSaving,

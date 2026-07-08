@@ -30,22 +30,10 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
-  const { isLoggedIn, isAdmin, loading } = useAuth();
+  const { isLoggedIn, isAdmin, whenReady } = useAuth();
 
-  // 等待 session 初始化完成再做跳转判断（最多等 5 秒，避免网络异常时无限卡住）
-  if (loading.value) {
-    await Promise.race([
-      new Promise(resolve => {
-        const stop = setInterval(() => {
-          if (!loading.value) { clearInterval(stop); resolve(); }
-        }, 50);
-      }),
-      new Promise(resolve => setTimeout(() => {
-        console.warn("等待 session 初始化超时，按未登录处理");
-        resolve();
-      }, 5000))
-    ]);
-  }
+  // 等待 session 初始化完成再做跳转判断
+  await whenReady();
 
   if (to.meta.requiresAuth && !isLoggedIn.value) return { name: "Login" };
   if (to.name === "Login" && isLoggedIn.value)   return { name: "Board" };

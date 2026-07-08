@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth.js";
 
@@ -125,6 +125,12 @@ const successMsg  = ref("");
 const submitting  = ref(false);
 const showPassword = ref(false)
 
+const REMEMBER_EMAIL_KEY = "weekly-work-plan:last-email";
+
+onMounted(() => {
+  email.value = localStorage.getItem(REMEMBER_EMAIL_KEY) || "";
+});
+
 function clearMsg() {
   errorMsg.value   = "";
   successMsg.value = "";
@@ -134,9 +140,11 @@ async function doLogin() {
   if (!email.value || !password.value) { errorMsg.value = "请填写邮箱和密码"; return; }
   submitting.value = true;
   clearMsg();
-  const { error } = await signIn(email.value.trim(), password.value);
+  const normalizedEmail = email.value.trim().toLowerCase();
+  const { error } = await signIn(normalizedEmail, password.value);
   submitting.value = false;
   if (error) { errorMsg.value = error.message; return; }
+  localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
   router.push({ name: "Board" });
 }
 
@@ -146,18 +154,20 @@ async function doRegister() {
   if (password.value.length < 6) { errorMsg.value = "密码至少 6 位"; return; }
   submitting.value = true;
   clearMsg();
-  const {data, error } = await signUp(email.value.trim(), password.value, displayName.value.trim());
+  const normalizedEmail = email.value.trim().toLowerCase();
+  const {data, error } = await signUp(normalizedEmail, password.value, displayName.value.trim());
   submitting.value = false;
   if (error) { errorMsg.value = error.message; return; }
   
   // 当前 Supabase 已关闭邮箱验证，signUp 会直接返回可用 session：自动登录并跳转；
   // 如果之后重新开启邮箱验证，data.session 会是 null，走下面的提示分支
   if (data?.session) {
+    localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
     successMsg.value = "注册成功，正在为你自动登录…";
     router.push({ name: "Board" });
     return;
   }
-
+  localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
   successMsg.value = "注册成功！请查收邮箱完成验证后，切换到「登录」页面登录。";
   password.value = "";
   mode.value = "login";

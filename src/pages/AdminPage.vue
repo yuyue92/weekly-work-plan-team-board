@@ -25,6 +25,7 @@
                   <th>显示名称</th>
                   <th>邮箱</th>
                   <th>角色</th>
+                  <th>状态</th>
                   <th>所在 Team</th>
                   <th>操作</th>
                   <th>危险操作</th>
@@ -242,8 +243,16 @@ async function disableUser(user) {
     const { error: tuErr } = await supabase.from("team_users").delete().eq("user_id", user.id);
     if (tuErr) throw tuErr;
 
-    const { error: profErr } = await supabase.from("profiles").update({ is_disabled: true }).eq("id", user.id);
+    const { data: updated, error: profErr } = await supabase
+      .from("profiles")
+      .update({ is_disabled: true })
+      .eq("id", user.id)
+      .select();
     if (profErr) throw profErr;
+    // RLS 拦截时不会报错，只是没改到任何行，这里手动兜底识别出来
+    if (!updated || updated.length === 0) {
+      throw new Error("更新失败：没有权限修改该用户资料，请检查 profiles 表的 RLS UPDATE 策略");
+    }
 
     await loadAll();
     showToast("账号已禁用");
@@ -258,8 +267,15 @@ async function disableUser(user) {
 async function enableUser(user) {
   togglingUserId.value = user.id;
   try {
-    const { error } = await supabase.from("profiles").update({ is_disabled: false }).eq("id", user.id);
+    const { data: updated, error } = await supabase
+      .from("profiles")
+      .update({ is_disabled: false })
+      .eq("id", user.id)
+      .select();
     if (error) throw error;
+    if (!updated || updated.length === 0) {
+      throw new Error("更新失败：没有权限修改该用户资料，请检查 profiles 表的 RLS UPDATE 策略");
+    }
     await loadAll();
     showToast("账号已启用");
   } catch (err) {

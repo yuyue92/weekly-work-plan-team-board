@@ -22,41 +22,54 @@
       </div>
     </header>
 
-    <AppToolbar
-      :teams="teamsData"
-      :state="state"
-      :week-options="weekOptions"
-      :members="currentMembers"
-      :import-state="importState"
-      :import-week-options="importWeekOptions"
-      :import-saving="importSaving"
-      :start-date-display="startDateDisplay"
-      :end-date-display="endDateDisplay"
-      :is-admin="isAdmin"
-      @team-change="onTeamChange"
-      @year-change="onYearChange"
-      @week-change="onWeekChange"
-      @export="exportJson"
-      @clear-week="clearCurrentWeek"
-      @import-owner-change="onImportOwnerChange"
-      @import-source-year-change="onImportSourceYearChange"
-      @import-source-week-change="onImportSourceWeekChange"
-      @copy-member-week="copySelectedMemberWeek"
-    />
+    <div v-if="noTeamMessage" class="card no-team-card">
+      <div class="card-body">
+        <h2 class="no-team-title">暂无可用 Team</h2>
+        <p class="no-team-message">{{ noTeamMessage }}</p>
+        <button class="btn btn-light btn-sm" type="button" @click="doSignOut">
+          退出登录
+        </button>
+      </div>
+    </div>
 
-    <div v-if="boardLoading" class="board-loading">Loading...</div>
+    <template v-else>
+      <AppToolbar
+        :teams="teamsData"
+        :state="state"
+        :week-options="weekOptions"
+        :members="currentMembers"
+        :import-state="importState"
+        :import-week-options="importWeekOptions"
+        :import-saving="importSaving"
+        :start-date-display="startDateDisplay"
+        :end-date-display="endDateDisplay"
+        :is-admin="isAdmin"
+        @team-change="onTeamChange"
+        @year-change="onYearChange"
+        @week-change="onWeekChange"
+        @export="exportJson"
+        @clear-week="clearCurrentWeek"
+        @import-owner-change="onImportOwnerChange"
+        @import-source-year-change="onImportSourceYearChange"
+        @import-source-week-change="onImportSourceWeekChange"
+        @copy-member-week="copySelectedMemberWeek"
+      />
+      <div v-if="boardLoading" class="board-loading">Loading...</div>
+  
+      <BoardTable
+        v-else
+        :board-title="boardTitle"
+        :members="currentMembers"
+        :get-member-items="getMemberItems"
+        :current-user-id="currentUser.id"
+        :is-admin="isAdmin"
+        @add-item="onAddItem"
+        @edit-item="openItemModal"
+        @drop-item="handleItemDrop"
+      />
+    </template>
 
-    <BoardTable
-      v-else
-      :board-title="boardTitle"
-      :members="currentMembers"
-      :get-member-items="getMemberItems"
-      :current-user-id="currentUser.id"
-      :is-admin="isAdmin"
-      @add-item="onAddItem"
-      @edit-item="openItemModal"
-      @drop-item="handleItemDrop"
-    />
+
   </div>
 
   <ItemModal
@@ -96,7 +109,7 @@ const { currentUser, isAdmin, signOut } = useAuth();
 const {
   STATUS_LABELS,
   state, weekOptions, teamsData, currentMembers,
-  boardLoading,
+  boardLoading, noTeamMessage,
   toastMessage, toastVisible,
   modalOpen, modalContext, modalDraft, modalSaveHint, modalSaving,
   importState, importWeekOptions, importSaving,
@@ -142,5 +155,8 @@ function onTaskSlotChange(index, slotKey, checked) {
   updateModalSaveHint(true);
 }
 
-onMounted(() => init());
+onMounted(() => init({
+  userId: currentUser.value.id,
+  isAdmin: isAdmin.value
+}));
 </script>
