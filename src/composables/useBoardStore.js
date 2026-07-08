@@ -13,49 +13,50 @@ import {
   isMeaningfulItem, isMeaningfulTask, cloneItem, countCheckedSlots
 } from "../utils/model.js";
 
+// ── 基础状态 ──────────────────────────────────────
+const weekOptions   = ref([]);
+const teamsData     = ref([]);   // [{ id, name }]
+const membersData   = ref([]);   // [{ user_id, display_name, profile }] for current team
+
+const state = reactive({
+  teamId:  null,   // 当前选中 team 的 uuid
+  teamName:"",
+  year:    new Date().getFullYear(),
+  weekKey: ""
+});
+
+// board 数据结构：{ [memberId]: { pending:[], processing:[], done:[] } }
+const boardData     = ref({});
+const boardLoading  = ref(false);
+
+const toastMessage   = ref("");
+const toastVisible   = ref(false);
+let toastTimer       = null;
+
+// 模态框
+const modalOpen     = ref(false);
+const modalContext  = ref(null);   // { ownerId, ownerName, status, itemId, isNew }
+const modalDraft    = ref(null);
+const modalSaveHint = ref("编辑内容不会自动保存");
+const modalSaving   = ref(false);
+
+// 管理员按成员复制周数据
+const importState = reactive({
+  ownerId:       "",
+  sourceYear:    state.year,
+  sourceWeekKey: ""
+});
+const importWeekOptions = ref([]);
+const importSaving      = ref(false);
+
 export function useBoardStore() {
-  // ── 基础状态 ──────────────────────────────────────
-  const weekOptions   = ref([]);
-  const teamsData     = ref([]);   // [{ id, name }]
-  const membersData   = ref([]);   // [{ user_id, display_name, profile }] for current team
-
-  const state = reactive({
-    teamId:  null,   // 当前选中 team 的 uuid
-    teamName:"",
-    year:    new Date().getFullYear(),
-    weekKey: ""
-  });
-
-  // board 数据结构：{ [memberId]: { pending:[], processing:[], done:[] } }
-  const boardData     = ref({});
-  const boardLoading  = ref(false);
-
-  const toastMessage   = ref("");
-  const toastVisible   = ref(false);
-  let toastTimer       = null;
-
-  // 模态框
-  const modalOpen     = ref(false);
-  const modalContext  = ref(null);   // { ownerId, ownerName, status, itemId, isNew }
-  const modalDraft    = ref(null);
-  const modalSaveHint = ref("编辑内容不会自动保存");
-  const modalSaving   = ref(false);
-
-  // 管理员按成员复制周数据
-  const importState = reactive({
-    ownerId:       "",
-    sourceYear:    state.year,
-    sourceWeekKey: ""
-  });
-  const importWeekOptions = ref([]);
-  const importSaving      = ref(false);
 
   // ── 工具 ──────────────────────────────────────────
-  function showToast(msg) {
+  function showToast(msg, duration = 1800) {
     toastMessage.value = msg;
     toastVisible.value = true;
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toastVisible.value = false; }, 1800);
+    toastTimer = setTimeout(() => { toastVisible.value = false; }, duration);
   }
 
   function findWeekByStartDate(startDate, preferredYear) {
@@ -308,7 +309,7 @@ export function useBoardStore() {
     const item = modalDraft.value;
 
     if (!isMeaningfulItem(item)) {
-      alert("请至少填写 Work Item 或一条有效 Task 内容。");
+      showToast("请至少填写 Work Item 或一条有效 Task 内容。");
       return;
     }
 
@@ -323,64 +324,49 @@ export function useBoardStore() {
       showToast(modalContext.value.isNew ? "Work Item 已新增" : "Work Item 已保存");
       closeModal();
     } catch (err) {
-      alert("保存失败：" + (err.message || String(err)));
+      showToast("保存失败：" + (err.message || String(err)));
     } finally {
       modalSaving.value = false;
     }
   }
 
   async function insertItem(item) {
-    // 1. 插入 work_item
-    const { data: wiData, error: wiErr } = await supabase
-      .from("work_items")
-      .insert(itemToRow(item, state.teamId, state.year, state.weekKey))
-      .select()
-      .single();
-    if (wiErr) throw wiErr;
-
-    // 2. 批量插入 tasks（过滤空白）
-    const meaningfulTasks = (item.tasks || []).filter(isMeaningfulTask);
-    if (meaningfulTasks.length) {
-      const taskRows = meaningfulTasks.map((t, i) => ({
-        ...taskToRow(t, wiData.id),
-        sort_order: i
-      }));
-      const { error: tErr } = await supabase.from("tasks").insert(taskRows);
-      if (tErr) throw tErr;
-    }
+    // work_item + tasks 合并为一次事务性 RPC，避免中途失败导致 task 丢失
+    const { error } = await supabase.rpc("save_work_item_with_tasks", {
+      p_work_item: itemToRow(item, state.teamId, state.year, state.weekKey),
+      p_tasks:     buildTaskPayload(item.tasks),
+      p_is_new:    true,
+      p_item_id:   null
+    });
+    if (error) throw error;
   }
 
   async function updateItem(item) {
-    // 1. 更新 work_item 基本字段
-    const { error: wiErr } = await supabase
-      .from("work_items")
-      .update({
+    // 同上：更新 work_item + 替换 tasks 合并为一次事务性 RPC
+    const { error } = await supabase.rpc("save_work_item_with_tasks", {
+      p_work_item: {
         work_item:            item.work_item || "",
         priority:             item.priority  || "Low",
         status:               item.status    || "pending",
         expect_complete_date: item.expect_complete_date || null,
         create_date:          item.create_date          || null
-      })
-      .eq("id", item.id);
-    if (wiErr) throw wiErr;
+      },
+      p_tasks:   buildTaskPayload(item.tasks),
+      p_is_new:  false,
+      p_item_id: item.id
+    });
+    if (error) throw error;
+  }
 
-    // 2. tasks：删除全部旧 tasks，再批量重新插入
-    //    （简单可靠，避免逐条 diff 对比）
-    const { error: delErr } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("work_item_id", item.id);
-    if (delErr) throw delErr;
-
-    const meaningfulTasks = (item.tasks || []).filter(isMeaningfulTask);
-    if (meaningfulTasks.length) {
-      const taskRows = meaningfulTasks.map((t, i) => ({
-        ...taskToRow(t, item.id),
-        sort_order: i
-      }));
-      const { error: tErr } = await supabase.from("tasks").insert(taskRows);
-      if (tErr) throw tErr;
-    }
+  // task 数组 → RPC 用的 jsonb payload（过滤空白 task，去掉客户端专用的 work_item_id 字段）
+  function buildTaskPayload(tasks) {
+    return (tasks || [])
+      .filter(isMeaningfulTask)
+      .map((t, i) => {
+        const row = taskToRow(t, null);
+        delete row.work_item_id;
+        return { ...row, sort_order: i };
+      });
   }
 
   // ── 删除 WorkItem ──────────────────────────────────
@@ -406,7 +392,7 @@ export function useBoardStore() {
       showToast("Work Item 已删除");
       closeModal();
     } catch (err) {
-      alert("删除失败：" + (err.message || String(err)));
+      showToast("删除失败：" + (err.message || String(err)));
     } finally {
       modalSaving.value = false;
     }
@@ -442,9 +428,11 @@ export function useBoardStore() {
         .eq("id", itemId);
       if (error) throw error;
       await loadBoard();
-      showToast("Work Item 已移动");
+      showToast("Work Item 已移动", 3000);
     } catch (err) {
-      alert("移动失败：" + (err.message || String(err)));
+      const isRlsDenied = /row-level security/i.test(err.message || "");
+      showToast(isRlsDenied ? "没有权限把该 Work Item 移动到其他成员名下，如需重新分配请联系管理员。" : "移动失败：" + (err.message || String(err)), 3000);
+      if (isRlsDenied) await loadBoard(); // 避免卡片在界面上残留"已移动"的错觉
     }
   }
 
@@ -458,7 +446,7 @@ export function useBoardStore() {
       .eq("team_id", state.teamId)
       .eq("year", state.year)
       .eq("week_key", state.weekKey);
-    if (error) { alert("清空失败：" + error.message); return; }
+    if (error) { showToast("清空失败：" + error.message); return; }
     await loadBoard();
     showToast("当前周已清空");
   }
@@ -478,7 +466,7 @@ export function useBoardStore() {
     );
 
     if (!member || !sourceWeek || !targetWeek) {
-      alert("请选择来源周和需要导入的成员。");
+      showToast("请选择来源周和需要导入的成员。");
       return;
     }
 
@@ -486,7 +474,7 @@ export function useBoardStore() {
       Number(importState.sourceYear) === Number(state.year) &&
       importState.sourceWeekKey === state.weekKey
     ) {
-      alert("来源周不能与当前目标周相同。");
+      showToast("来源周不能与当前目标周相同。");
       return;
     }
 
@@ -529,7 +517,7 @@ export function useBoardStore() {
         } 条 Work Item`
       );
     } catch (err) {
-      alert("导入失败：" + (err.message || String(err)));
+      showToast("导入失败：" + (err.message || String(err)));
     } finally {
       importSaving.value = false;
     }

@@ -76,7 +76,7 @@ import { ref } from "vue";
 import ItemCard from "./ItemCard.vue";
 import { STATUS_KEYS, STATUS_LABELS } from "../constants/index.js";
 
-defineProps({
+const props = defineProps({
   boardTitle:     { type: String,   default: "" },
   members:        { type: Array,    required: true },  // [{ userId, displayName }]
   getMemberItems: { type: Function, required: true },
@@ -89,11 +89,17 @@ const emit = defineEmits(["add-item", "edit-item", "drop-item"]);
 const dragPayload = ref(null);
 const dragOverKey = ref("");
 
+// 和 ItemCard 的 draggableItem 权限保持一致：非 admin 不能把卡片拖给别的成员。
+// 后端 RLS 已经会拦截，这里提前判断只是为了避免误操作、给出更友好的反馈。
+function canDropTo(userId) {
+  return props.isAdmin || userId === props.currentUserId;
+}
+
 function onItemDragStart(payload) { dragPayload.value = payload; }
 function onItemDragEnd()          { dragPayload.value = null; dragOverKey.value = ""; }
 
 function onDragOver(userId, status) {
-  if (!dragPayload.value) return;
+  if (!dragPayload.value || !canDropTo(userId)) return;
   dragOverKey.value = userId + "|" + status;
 }
 

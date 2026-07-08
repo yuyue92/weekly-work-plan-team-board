@@ -28,36 +28,37 @@
     </div>
 
     <!-- 预览框：fixed 定位，top/left 由 JS 写入 style -->
-    <div
-      ref="previewEl"
-      class="item-preview"
-      :class="{ 'is-preview-visible': previewVisible, 'is-flipped': arrowFlipped }"
-      :style="{ ...previewStyle, '--arrow-left': arrowLeft + 'px' }"
-    >
-      <div class="item-preview-scroll">
-        <div class="preview-title">{{ item.work_item || "Untitled Work Item" }}</div>
-        <template v-if="!item.tasks.length">
-          <div class="preview-task">暂无 task，点击卡片可新增。</div>
-        </template>
-        <template v-else>
-          <div class="preview-task" v-for="task in item.tasks.slice(0, 4)" :key="task.id || task.task_name">
-            <b>{{ task.task_name || "Untitled Task" }}</b>
-            <div>{{ truncate(task.description || task.remark_blocker || "", 80) }}</div>
-            <div class="preview-slots">
-              <span
-                v-for="(key, idx) in PREVIEW_SLOT_KEYS"
-                :key="key"
-                class="preview-slot"
-                :class="{ checked: task.slots?.[key] }"
-              >{{ PREVIEW_SLOT_LABELS[idx] }}</span>
+     <Teleport to="body">
+      <div
+        ref="previewEl"
+        class="item-preview"
+        :class="{ 'is-preview-visible': previewVisible, 'is-flipped': arrowFlipped }"
+        :style="{ ...previewStyle, '--arrow-left': arrowLeft + 'px' }">
+        <div class="item-preview-scroll">
+          <div class="preview-title">{{ item.work_item || "Untitled Work Item" }}</div>
+          <template v-if="!item.tasks.length">
+            <div class="preview-task">暂无 task，点击卡片可新增。</div>
+          </template>
+          <template v-else>
+            <div class="preview-task" v-for="task in item.tasks.slice(0, 4)" :key="task.id || task.task_name">
+              <b>{{ task.task_name || "Untitled Task" }}</b>
+              <div>{{ truncate(task.description || task.remark_blocker || "", 80) }}</div>
+              <div class="preview-slots">
+                <span
+                  v-for="(key, idx) in PREVIEW_SLOT_KEYS"
+                  :key="key"
+                  class="preview-slot"
+                  :class="{ checked: task.slots?.[key] }"
+                >{{ PREVIEW_SLOT_LABELS[idx] }}</span>
+              </div>
             </div>
-          </div>
-          <div class="preview-task" v-if="item.tasks.length > 4">
-            还有 {{ item.tasks.length - 4 }} 条 task...
-          </div>
-        </template>
+            <div class="preview-task" v-if="item.tasks.length > 4">
+              还有 {{ item.tasks.length - 4 }} 条 task...
+            </div>
+          </template>
+        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 

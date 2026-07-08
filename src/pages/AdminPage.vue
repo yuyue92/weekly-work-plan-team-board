@@ -27,6 +27,7 @@
                   <th>角色</th>
                   <th>所在 Team</th>
                   <th>操作</th>
+                  <th>危险操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -36,6 +37,11 @@
                   <td>
                     <span class="badge badge-role" :class="user.role === 'admin' ? 'badge-admin' : 'badge-staff'">
                       {{ user.role === 'admin' ? 'Admin' : 'Staff' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" :class="user.is_disabled ? 'badge-staff' : 'badge-admin'">
+                      {{ user.is_disabled ? '已禁用' : '正常' }}
                     </span>
                   </td>
                   <td>
@@ -75,9 +81,24 @@
                       >加入</button>
                     </div>
                   </td>
+                  <td>
+                    <button
+                      v-if="user.id !== currentUser.id && !user.is_disabled"
+                      class="btn btn-outline-danger btn-sm"
+                      :disabled="togglingUserId === user.id"
+                      @click="disableUser(user)"
+                    >{{ togglingUserId === user.id ? "处理中..." : "禁用（清空数据）" }}</button>
+                    <button
+                      v-else-if="user.id !== currentUser.id && user.is_disabled"
+                      class="btn btn-outline-primary btn-sm"
+                      :disabled="togglingUserId === user.id"
+                      @click="enableUser(user)"
+                    >{{ togglingUserId === user.id ? "处理中..." : "启用" }}</button>
+                    <span v-else class="text-muted" style="font-size:12px;">当前登录账号</span>
+                  </td>
                 </tr>
                 <tr v-if="!allProfiles.length">
-                  <td colspan="5" style="text-align:center;color:#94a3b8;padding:18px;">
+                  <td colspan="7" style="text-align:center;color:#94a3b8;padding:18px;">
                     暂无注册用户
                   </td>
                 </tr>
@@ -114,13 +135,17 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { supabase } from "../lib/supabase.js";
+import { useAuth } from "../composables/useAuth.js";
 import ToastMessage from "../components/ToastMessage.vue";
+
+const { currentUser } = useAuth();
 
 const loading      = ref(true);
 const allProfiles  = ref([]);   // public.profiles 全部
 const allTeams     = ref([]);   // public.teams 全部
 const teamUsers    = ref([]);   // public.team_users 全部 { team_id, user_id }
 
+const togglingUserId = ref("");
 // 每个用户待分配的 team 选择（user_id -> team_id）
 const assignTarget = reactive({});
 
@@ -178,7 +203,7 @@ async function addMember(userId) {
   const { error } = await supabase
     .from("team_users")
     .insert({ team_id: teamId, user_id: userId });
-  if (error) { alert("操作失败：" + error.message); return; }
+  if (error) { showToast("操作失败：" + error.message); return; }
   assignTarget[userId] = "";
   await loadAll();
   showToast("已加入 Team");
@@ -194,9 +219,54 @@ async function removeMember(userId, teamId) {
     .delete()
     .eq("team_id", teamId)
     .eq("user_id", userId);
-  if (error) { alert("操作失败：" + error.message); return; }
+  if (error) { showToast("操作失败：" + error.message); return; }
   await loadAll();
   showToast("已移除");
+}
+
+// ── 禁用账号（软删除）：清空该用户 work_items（连带 tasks 级联删除）+ team_users，
+//    再把 profiles.is_disabled 置 true。auth.users 本身不动，前端权限做不到删除。
+async function disableUser(user) {
+  if (user.id === currentUser.value.id) return;
+
+  const confirmText =
+    `确定要禁用「${user.display_name}（${user.email}）」吗？\n` +
+    `此操作会清空该账号名下的所有 Work Item / Task，且无法恢复，账号也将无法再登录。`;
+  if (!confirm(confirmText)) return;
+
+  togglingUserId.value = user.id;
+  try {
+    const { error: wiErr } = await supabase.from("work_items").delete().eq("owner_id", user.id);
+    if (wiErr) throw wiErr;
+
+    const { error: tuErr } = await supabase.from("team_users").delete().eq("user_id", user.id);
+    if (tuErr) throw tuErr;
+
+    const { error: profErr } = await supabase.from("profiles").update({ is_disabled: true }).eq("id", user.id);
+    if (profErr) throw profErr;
+
+    await loadAll();
+    showToast("账号已禁用");
+  } catch (err) {
+    alert("操作失败：" + (err.message || String(err)));
+  } finally {
+    togglingUserId.value = "";
+  }
+}
+
+// ── 重新启用账号（只恢复登录权限，不恢复已清空的数据）───────
+async function enableUser(user) {
+  togglingUserId.value = user.id;
+  try {
+    const { error } = await supabase.from("profiles").update({ is_disabled: false }).eq("id", user.id);
+    if (error) throw error;
+    await loadAll();
+    showToast("账号已启用");
+  } catch (err) {
+    alert("操作失败：" + (err.message || String(err)));
+  } finally {
+    togglingUserId.value = "";
+  }
 }
 
 onMounted(loadAll);

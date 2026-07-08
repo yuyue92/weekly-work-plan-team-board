@@ -146,10 +146,20 @@ async function doRegister() {
   if (password.value.length < 6) { errorMsg.value = "密码至少 6 位"; return; }
   submitting.value = true;
   clearMsg();
-  const { error } = await signUp(email.value.trim(), password.value, displayName.value.trim());
+  const {data, error } = await signUp(email.value.trim(), password.value, displayName.value.trim());
   submitting.value = false;
   if (error) { errorMsg.value = error.message; return; }
-  successMsg.value = "注册成功！请切换到「登录」页面直接登录。";
-  password.value   = "";
+  
+  // 当前 Supabase 已关闭邮箱验证，signUp 会直接返回可用 session：自动登录并跳转；
+  // 如果之后重新开启邮箱验证，data.session 会是 null，走下面的提示分支
+  if (data?.session) {
+    successMsg.value = "注册成功，正在为你自动登录…";
+    router.push({ name: "Board" });
+    return;
+  }
+
+  successMsg.value = "注册成功！请查收邮箱完成验证后，切换到「登录」页面登录。";
+  password.value = "";
+  mode.value = "login";
 }
 </script>

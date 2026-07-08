@@ -61,7 +61,7 @@ export function rowToItem(row, tasks = []) {
     id:                   row.id,
     owner_id:             row.owner_id,
     work_item:            row.work_item            || "",
-    priority:             PRIORITIES.includes(row.priority) ? row.priority : "Low",
+    priority:             PRIORITIES.includes(row.priority) ? row.priority : "Medium",
     status:               row.status               || "pending",
     expect_complete_date: row.expect_complete_date || "",
     create_date:          row.create_date          || "",
