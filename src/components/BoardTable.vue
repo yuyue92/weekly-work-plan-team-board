@@ -17,9 +17,17 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="member in members" :key="member.userId">
+            <tr v-for="(member, idx) in members" :key="member.userId">
               <td class="member-cell">
-                <span class="member-name">{{ member.displayName }}</span>
+                <div class="member-cell-inner">
+                  <span class="member-name">{{ member.displayName }}</span>
+                  <button
+                    v-if="isAdmin && idx > 0"
+                    type="button"
+                    class="member-move-up"
+                    title="上移"
+                    @click="$emit('move-member-up', member.userId)">↑</button>
+                </div>
               </td>
               <td
                 v-for="status in STATUS_KEYS"
@@ -84,7 +92,7 @@ const props = defineProps({
   isAdmin:        { type: Boolean,  default: false }
 });
 
-const emit = defineEmits(["add-item", "edit-item", "drop-item"]);
+const emit = defineEmits(["add-item", "edit-item", "drop-item", "move-member-up"]);
 
 const dragPayload = ref(null);
 const dragOverKey = ref("");

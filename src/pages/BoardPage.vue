@@ -66,6 +66,7 @@
         @add-item="onAddItem"
         @edit-item="openItemModal"
         @drop-item="handleItemDrop"
+        @move-member-up="moveMemberUp"
       />
     </template>
 
@@ -117,6 +118,7 @@ const {
   init,
   onTeamChange, onYearChange, onWeekChange,
   getMemberItems,
+  moveMemberUp,
   addItem, openItemModal, closeModal, updateModalSaveHint,
   saveModalAndClose, deleteCurrentItem,
   addTaskToCurrentItem, deleteTaskFromCurrentItem,

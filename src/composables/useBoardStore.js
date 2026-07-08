@@ -242,14 +242,16 @@ export function useBoardStore() {
     // 拉取该 team 的成员列表
     const { data, error } = await supabase
       .from("team_users")
-      .select("user_id, profiles(id, display_name, role)")
-      .eq("team_id", teamId);
+      .select("user_id, sort_order, profiles(id, display_name, role)")
+      .eq("team_id", teamId)
+      .order("sort_order");
 
     if (error) { console.error("拉取成员失败", error); return; }
     membersData.value = (data || []).map(row => ({
       userId:      row.profiles.id,
       displayName: row.profiles.display_name,
-      role:        row.profiles.role
+      role:        row.profiles.role,
+      sortOrder:   row.sort_order
     }));
 
     // 年/周重新初始化
@@ -278,6 +280,30 @@ export function useBoardStore() {
     state.weekKey = weekKey;
     resetImportDefaults();
     loadBoard();
+  }
+
+  // ── 成员排序：和"上一个人"互换 sort_order（只有 admin 会调用这个方法）──
+  async function moveMemberUp(userId) {
+    const list = membersData.value; // 已按 sort_order 排好序
+    const idx  = list.findIndex(m => m.userId === userId);
+    if (idx <= 0) return; // 已经是第一个，或找不到，什么都不做
+
+    const current  = list[idx];
+    const previous = list[idx - 1];
+
+    const { error } = await supabase.rpc("swap_member_sort_order", {
+      p_team_id: state.teamId,
+      p_user_a:  current.userId,
+      p_user_b:  previous.userId
+    });
+    if (error) {
+      showToast("排序失败：" + error.message);
+      return;
+    }
+
+    // 本地直接交换两条数据的位置，避免重新拉一次成员列表的等待感
+    [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]];
+    [list[idx - 1].sortOrder, list[idx].sortOrder] = [list[idx].sortOrder, list[idx - 1].sortOrder];
   }
 
   // ── 加载看板数据 ───────────────────────────────────
@@ -650,6 +676,7 @@ export function useBoardStore() {
     saveModalAndClose, deleteCurrentItem,
     addTaskToCurrentItem, deleteTaskFromCurrentItem,
     handleItemDrop, clearCurrentWeek,
+    moveMemberUp,
     onImportOwnerChange,
     onImportSourceYearChange,
     onImportSourceWeekChange,
