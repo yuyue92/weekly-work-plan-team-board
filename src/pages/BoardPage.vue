@@ -16,18 +16,18 @@
           {{ isAdmin ? 'Admin' : 'Staff' }}
         </span>
         <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin')">
-          成员管理
+          Member Management
         </button>
-        <button class="btn btn-light btn-sm" @click="doSignOut">退出</button>
+        <button class="btn btn-light btn-sm" @click="doSignOut">Sign Out</button>
       </div>
     </header>
 
     <div v-if="noTeamMessage" class="card no-team-card">
       <div class="card-body">
-        <h2 class="no-team-title">暂无可用 Team</h2>
+        <h2 class="no-team-title">No Team Available</h2>
         <p class="no-team-message">{{ noTeamMessage }}</p>
         <button class="btn btn-light btn-sm" type="button" @click="doSignOut">
-          退出登录
+          Log Out
         </button>
       </div>
     </div>

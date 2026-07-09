@@ -10,22 +10,22 @@
           class="auth-tab"
           :class="{ active: mode === 'login' }"
           @click="mode = 'login'; clearMsg()"
-        >登录</button>
+        >Log In</button>
         <button
           class="auth-tab"
           :class="{ active: mode === 'register' }"
           @click="mode = 'register'; clearMsg()"
-        >注册</button>
+        >Sign Up</button>
       </div>
 
       <!-- 登录表单 -->
       <div v-if="mode === 'login'">
         <div class="form-group">
-          <label>邮箱</label>
+          <label>Email</label>
           <input class="form-control" type="email" v-model="email" placeholder="xxx@pccw.com" @keyup.enter="doLogin" />
         </div>
         <div class="form-group">
-          <label>密码</label>
+          <label>Password</label>
           <div class="auth-password-wrap">
             <input class="form-control" :type="showPassword ? 'text' : 'password'" v-model="password" @keyup.enter="doLogin" />
             <button
@@ -55,22 +55,22 @@
         </div>
         <div v-if="errorMsg" class="auth-error">{{ errorMsg }}</div>
         <button class="btn btn-primary auth-btn" :disabled="submitting" @click="doLogin">
-          {{ submitting ? "登录中..." : "登录" }}
+          {{ submitting ? "Logging in..." : "Log In" }}
         </button>
       </div>
 
       <!-- 注册表单 -->
       <div v-if="mode === 'register'">
         <div class="form-group">
-          <label>显示名称（看板中显示的姓名）</label>
+          <label>Display Name (shown on the board)</label>
           <input class="form-control" type="text" v-model="displayName" placeholder="e.g. Zhang San" />
         </div>
         <div class="form-group">
-          <label>邮箱（仅限 @pccw.com）</label>
+          <label>Email (must be @pccw.com)</label>
           <input class="form-control" type="email" v-model="email" placeholder="xxx@pccw.com" />
         </div>
         <div class="form-group">
-          <label>密码（至少 6 位）</label>
+          <label>Password (at least 6 characters)</label>
           <div class="auth-password-wrap">
             <input class="form-control" :type="showPassword ? 'text' : 'password'" v-model="password" />
             <button
@@ -101,7 +101,7 @@
         <div v-if="errorMsg"   class="auth-error">{{ errorMsg }}</div>
         <div v-if="successMsg" class="auth-success">{{ successMsg }}</div>
         <button class="btn btn-primary auth-btn" :disabled="submitting" @click="doRegister">
-          {{ submitting ? "注册中..." : "注册" }}
+          {{ submitting ? "Signing up..." : "Sign Up" }}
         </button>
       </div>
     </div>
@@ -137,7 +137,7 @@ function clearMsg() {
 }
 
 async function doLogin() {
-  if (!email.value || !password.value) { errorMsg.value = "请填写邮箱和密码"; return; }
+  if (!email.value || !password.value) { errorMsg.value = "Please enter your email and password"; return; }
   submitting.value = true;
   clearMsg();
   const normalizedEmail = email.value.trim().toLowerCase();
@@ -149,9 +149,9 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  if (!displayName.value.trim()) { errorMsg.value = "请填写显示名称"; return; }
-  if (!email.value || !password.value) { errorMsg.value = "请填写邮箱和密码"; return; }
-  if (password.value.length < 6) { errorMsg.value = "密码至少 6 位"; return; }
+  if (!displayName.value.trim()) { errorMsg.value = "Please enter a display name"; return; }
+  if (!email.value || !password.value) { errorMsg.value = "Please enter your email and password"; return; }
+  if (password.value.length < 6) { errorMsg.value = "Password must be at least 6 characters"; return; }
   submitting.value = true;
   clearMsg();
   const normalizedEmail = email.value.trim().toLowerCase();
@@ -163,12 +163,12 @@ async function doRegister() {
   // 如果之后重新开启邮箱验证，data.session 会是 null，走下面的提示分支
   if (data?.session) {
     localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
-    successMsg.value = "注册成功，正在为你自动登录…";
+    successMsg.value = "Sign-up successful, logging you in automatically…";
     router.push({ name: "Board" });
     return;
   }
   localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
-  successMsg.value = "注册成功！请查收邮箱完成验证后，切换到「登录」页面登录。";
+  successMsg.value = "Sign-up successful! Please check your email to verify your account, then log in from the [Log In] tab.";
   password.value = "";
   mode.value = "login";
 }

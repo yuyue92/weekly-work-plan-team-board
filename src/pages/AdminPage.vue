@@ -2,33 +2,33 @@
   <div class="container">
     <header class="app-header">
       <div class="app-hader-sub">
-        <h1 class="app-title">成员管理</h1>
-        <p class="app-subtitle">管理各 Team 的成员分配</p>
+        <h1 class="app-title">Member Management</h1>
+        <p class="app-subtitle">Manage team member assignments</p>
       </div>
       <div class="header-right">
-        <button class="btn btn-light btn-sm" @click="$router.push('/')">← 返回看板</button>
+        <button class="btn btn-light btn-sm" @click="$router.push('/')">← Back to Board</button>
       </div>
     </header>
 
-    <div v-if="loading" class="board-loading">加载中...</div>
+    <div v-if="loading" class="board-loading">Loading...</div>
 
     <template v-else>
       <!-- 所有已注册用户 -->
       <section class="card" style="margin-bottom:16px;">
         <div class="card-body">
-          <h2 class="section-title">已注册用户</h2>
-          <p class="section-hint">以下是所有已注册的 @pccw.com 账号，可将其分配到对应 Team。</p>
+          <h2 class="section-title">Registered Users</h2>
+          <p class="section-hint">All registered @pccw.com accounts are listed below. Assign each one to a team.</p>
           <div class="table-responsive">
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>显示名称</th>
-                  <th>邮箱</th>
-                  <th>角色</th>
-                  <th>状态</th>
-                  <th>所在 Team</th>
-                  <th>操作</th>
-                  <th>危险操作</th>
+                  <th>Display Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Team</th>
+                  <th>Actions</th>
+                  <th>Danger Zone</th>
                 </tr>
               </thead>
               <tbody>
@@ -42,7 +42,7 @@
                   </td>
                   <td>
                     <span class="badge" :class="user.is_disabled ? 'badge-staff' : 'badge-admin'">
-                      {{ user.is_disabled ? '已禁用' : '正常' }}
+                      {{ user.is_disabled ? 'Disabled' : 'Active' }}
                     </span>
                   </td>
                   <td>
@@ -58,17 +58,17 @@
                         {{ team.name }}
                         <button
                           class="tag-remove"
-                          title="移除"
+                          title="Remove"
                           @click="removeMember(user.id, team.id)"
                         >×</button>
                       </span>
                     </span>
-                    <span v-else class="text-muted">未分配</span>
+                    <span v-else class="text-muted">Unassigned</span>
                   </td>
                   <td>
                     <div class="assign-row">
                       <select class="form-select form-select-sm" v-model="assignTarget[user.id]">
-                        <option value="">选择 Team…</option>
+                        <option value="">Select Team…</option>
                         <option
                           v-for="team in getAssignableTeams(user.id)"
                           :key="team.id"
@@ -79,7 +79,7 @@
                         class="btn btn-primary btn-sm"
                         :disabled="!assignTarget[user.id]"
                         @click="addMember(user.id)"
-                      >加入</button>
+                      >Join</button>
                     </div>
                   </td>
                   <td>
@@ -88,19 +88,19 @@
                       class="btn btn-outline-danger btn-sm"
                       :disabled="togglingUserId === user.id"
                       @click="disableUser(user)"
-                    >{{ togglingUserId === user.id ? "处理中..." : "禁用（清空数据）" }}</button>
+                    >{{ togglingUserId === user.id ? "Processing..." : "Disable (Clear Data)" }}</button>
                     <button
                       v-else-if="user.id !== currentUser.id && user.is_disabled"
                       class="btn btn-outline-primary btn-sm"
                       :disabled="togglingUserId === user.id"
                       @click="enableUser(user)"
-                    >{{ togglingUserId === user.id ? "处理中..." : "启用" }}</button>
-                    <span v-else class="text-muted" style="font-size:12px;">当前登录账号</span>
+                    >{{ togglingUserId === user.id ? "Processing..." : "Enable" }}</button>
+                    <span v-else class="text-muted" style="font-size:12px;">Current Account</span>
                   </td>
                 </tr>
                 <tr v-if="!allProfiles.length">
                   <td colspan="7" style="text-align:center;color:#94a3b8;padding:18px;">
-                    暂无注册用户
+                    No registered users
                   </td>
                 </tr>
               </tbody>
@@ -112,7 +112,7 @@
       <!-- Team 概览 -->
       <section class="card">
         <div class="card-body">
-          <h2 class="section-title">Team 成员概览</h2>
+          <h2 class="section-title">Team Members Overview</h2>
           <div class="teams-overview">
             <div v-for="team in allTeams" :key="team.id" class="team-block">
               <div class="team-block-name">{{ team.name }}</div>
@@ -121,7 +121,7 @@
                   {{ getProfile(m.user_id)?.display_name || m.user_id }}
                 </span>
               </div>
-              <div v-else class="text-muted" style="font-size:13px;">暂无成员</div>
+              <div v-else class="text-muted" style="font-size:13px;">No members</div>
             </div>
           </div>
         </div>
@@ -204,10 +204,10 @@ async function addMember(userId) {
   const { error } = await supabase
     .from("team_users")
     .insert({ team_id: teamId, user_id: userId });
-  if (error) { showToast("操作失败：" + error.message); return; }
+  if (error) { showToast("Operation failed:" + error.message); return; }
   assignTarget[userId] = "";
   await loadAll();
-  showToast("已加入 Team");
+  showToast("Joined Team");
 }
 
 // ── 移除 Team ─────────────────────────────────────────
@@ -220,7 +220,7 @@ async function removeMember(userId, teamId) {
     .delete()
     .eq("team_id", teamId)
     .eq("user_id", userId);
-  if (error) { showToast("操作失败：" + error.message); return; }
+  if (error) { showToast("Operation failed:" + error.message); return; }
   await loadAll();
   showToast("已移除");
 }
@@ -257,7 +257,7 @@ async function disableUser(user) {
     await loadAll();
     showToast("账号已禁用");
   } catch (err) {
-    alert("操作失败：" + (err.message || String(err)));
+    alert("Operation failed:" + (err.message || String(err)));
   } finally {
     togglingUserId.value = "";
   }
@@ -279,7 +279,7 @@ async function enableUser(user) {
     await loadAll();
     showToast("账号已启用");
   } catch (err) {
-    alert("操作失败：" + (err.message || String(err)));
+    alert("Operation failed:" + (err.message || String(err)));
   } finally {
     togglingUserId.value = "";
   }
