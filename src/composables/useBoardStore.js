@@ -267,6 +267,7 @@ export function useBoardStore() {
 
     resetImportDefaults();
     await loadBoard();
+    if (data.length === 0) showToast('No Member Data', 5000)
   }
 
   function onYearChange(rawValue) {

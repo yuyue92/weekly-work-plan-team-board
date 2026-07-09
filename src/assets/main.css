@@ -29,7 +29,6 @@
     }
 
     .container {
-      max-width: 1600px;
       margin: 0 auto;
       padding: 15px;
     }
@@ -694,7 +693,7 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
@@ -702,7 +701,28 @@
       z-index: 1000;
     }
 
-    .modal-backdrop.show { display: flex; }
+    /* 弹框淡入淡出：backdrop 只做透明度过渡，modal 卡片再叠加一点缩放/位移，效果更柔和 */
+    .modal-fade-enter-active {
+      transition: opacity 0.4s ease-out;
+    }
+    .modal-fade-leave-active {
+      transition: opacity 0.3s ease-in;  /* 淡出稍快，缓动不同 */
+    }
+    .modal-fade-enter-active .modal {
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+    .modal-fade-leave-active .modal {
+      transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+    }
+    .modal-fade-enter-from,
+    .modal-fade-leave-to {
+      opacity: 0;
+    }
+    .modal-fade-enter-from .modal,
+    .modal-fade-leave-to .modal {
+      opacity: 0;
+      transform: translateY(-12px) scale(0.98);
+    }
 
     .modal {
       width: min(1180px, 96vw);
@@ -732,9 +752,9 @@
 
     .workitem-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
+      grid-template-columns: 2fr repeat(4, 140px);
       gap: 12px;
-      margin-bottom: 18px;
+      border-bottom: 1px solid #ddd;
     }
 
     .tasks-header {
