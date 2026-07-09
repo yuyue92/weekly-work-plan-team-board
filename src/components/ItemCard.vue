@@ -11,12 +11,29 @@
   >
     <div class="item-top">
       <div class="item-title">{{ item.work_item || "Untitled Work Item" }}</div>
-      <button
-        v-if="canEdit"
-        class="btn btn-light btn-sm"
-        type="button"
-        @click.stop="$emit('edit', memberId, status, item.id)"
-      >Edit</button>
+      <div v-if="canEdit" class="item-actions">
+        <button
+          class="btn btn-light btn-sm icon-btn"
+          type="button"
+          title="复制到上一周"
+          aria-label="复制到上一周"
+          :disabled="isCopying"
+          @click.stop="$emit('copy-week', memberId, status, item.id, -1)"
+        >‹</button>
+        <button
+          class="btn btn-light btn-sm"
+          type="button"
+          @click.stop="$emit('edit', memberId, status, item.id)"
+        >Edit</button>
+        <button
+          class="btn btn-light btn-sm icon-btn"
+          type="button"
+          title="复制到下一周"
+          aria-label="复制到下一周"
+          :disabled="isCopying"
+          @click.stop="$emit('copy-week', memberId, status, item.id, 1)"
+        >›</button>
+      </div>
       <span v-else class="tag">Readonly</span>
     </div>
     <div class="item-meta">
@@ -73,9 +90,10 @@ const props = defineProps({
   memberId:      { type: String,  required: true },
   status:        { type: String,  required: true },
   canEdit:       { type: Boolean, default: false },
-  draggableItem: { type: Boolean, default: false }
+  draggableItem: { type: Boolean, default: false },
+  isCopying:     { type: Boolean, default: false }
 });
-const emit = defineEmits(["edit", "drag-start", "drag-end"]);
+const emit = defineEmits(["edit", "drag-start", "drag-end", "copy-week"]);
 
 const isDragging    = ref(false);
 const previewVisible = ref(false);

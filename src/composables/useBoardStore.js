@@ -52,6 +52,9 @@ const importState = reactive({
 const importWeekOptions = ref([]);
 const importSaving      = ref(false);
 
+// 卡片级"复制到上一周/下一周"：记录正在复制中的 item id，避免重复点击
+const copyingItemIds = reactive({});
+
 export function useBoardStore() {
 
   // ── 工具 ──────────────────────────────────────────
@@ -533,6 +536,58 @@ export function useBoardStore() {
     }
   }
 
+  // ── 卡片级复制：把某个 Work Item 复制一份到上一周 / 下一周 ──────
+  // direction: -1 = 上一周，1 = 下一周。原卡片保持不动，目标周新增一份独立副本。
+  // 权限：和 Edit 按钮一致（isAdmin || 本人），由 ItemCard 的 v-if="canEdit" 控制显示，
+  // 写入走的是新增 Work Item 同一条 RPC，staff 对自己数据的 RLS 权限本来就覆盖这里，无需改动后端。
+  async function copyItemToAdjacentWeek(memberId, status, itemId, direction) {
+    if (copyingItemIds[itemId]) return; // 防止重复点击
+
+    const item = getMemberItems(memberId, status).find(i => i.id === itemId);
+    const sourceWeek = weekOptions.value.find(w => w.key === state.weekKey);
+    if (!item || !sourceWeek) return;
+
+    const targetStartDate = formatDate(
+      addDays(parseDate(sourceWeek.startDate), direction * 7)
+    );
+    const matched = findWeekByStartDate(targetStartDate, state.year);
+
+    if (!matched) {
+      showToast(direction < 0 ? "没有更早的可选周了。" : "没有更晚的可选周了。");
+      return;
+    }
+
+    copyingItemIds[itemId] = true;
+    try {
+      const payload = cloneItem(item); // 深拷贝，避免影响原卡片
+      const { error } = await supabase.rpc("save_work_item_with_tasks", {
+        p_work_item: itemToRow(payload, state.teamId, matched.year, matched.week.key),
+        p_tasks:     buildTaskPayload(payload.tasks),
+        p_is_new:    true,
+        p_item_id:   null
+      });
+      if (error) throw error;
+
+      const yearHint = matched.year !== state.year ? `（${matched.year} 年）` : "";
+      showToast(`已复制到 ${matched.week.label}${yearHint}`, 2500);
+
+      // 极端情况下目标周恰好也是当前显示的周（理论上不会发生，直接兜底刷新一下）
+      if (matched.year === state.year && matched.week.key === state.weekKey) {
+        await loadBoard();
+      }
+    } catch (err) {
+      const isRlsDenied = /row-level security/i.test(err.message || "");
+      showToast(
+        isRlsDenied
+          ? "没有权限复制该 Work Item，如需处理请联系管理员。"
+          : "复制失败：" + (err.message || String(err)),
+        3000
+      );
+    } finally {
+      delete copyingItemIds[itemId];
+    }
+  }
+
   // ── 清空当前周（仅 admin）─────────────────────────
   async function clearCurrentWeek() {
     const week = weekOptions.value.find(w => w.key === state.weekKey);
@@ -676,6 +731,7 @@ export function useBoardStore() {
     saveModalAndClose, deleteCurrentItem,
     addTaskToCurrentItem, deleteTaskFromCurrentItem,
     handleItemDrop, clearCurrentWeek,
+    copyingItemIds, copyItemToAdjacentWeek,
     moveMemberUp,
     onImportOwnerChange,
     onImportSourceYearChange,

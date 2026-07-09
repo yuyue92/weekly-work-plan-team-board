@@ -402,6 +402,9 @@
       vertical-align: top;
       background: #fff;
     }
+    .board-table tbody td:nth-child(1) {
+      vertical-align: middle;
+    }
 
     .board-table thead th:first-child {
       background: #fbfdff;
@@ -535,6 +538,26 @@
       justify-content: space-between;
       gap: 8px;
       align-items: flex-start;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      width: 26px;
+      padding: 0;
+      line-height: 1;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .item-title {

@@ -61,9 +61,11 @@
                     :status="status"
                     :can-edit="isAdmin || member.userId === currentUserId"
                     :draggable-item="isAdmin || member.userId === currentUserId"
+                    :is-copying="Boolean(copyingItemIds[item.id])"
                     @edit="(uid, s, id) => $emit('edit-item', uid, s, id)"
                     @drag-start="onItemDragStart"
                     @drag-end="onItemDragEnd"
+                    @copy-week="(uid, s, id, dir) => $emit('copy-item-week', uid, s, id, dir)"
                   />
 
                   <div v-if="!getMemberItems(member.userId, status).length" class="empty-note">
@@ -89,10 +91,11 @@ const props = defineProps({
   members:        { type: Array,    required: true },  // [{ userId, displayName }]
   getMemberItems: { type: Function, required: true },
   currentUserId:  { type: String,   default: "" },
-  isAdmin:        { type: Boolean,  default: false }
+  isAdmin:        { type: Boolean,  default: false },
+  copyingItemIds: { type: Object,   default: () => ({}) } // { [itemId]: true } 正在复制中的卡片
 });
 
-const emit = defineEmits(["add-item", "edit-item", "drop-item", "move-member-up"]);
+const emit = defineEmits(["add-item", "edit-item", "drop-item", "move-member-up", "copy-item-week"]);
 
 const dragPayload = ref(null);
 const dragOverKey = ref("");

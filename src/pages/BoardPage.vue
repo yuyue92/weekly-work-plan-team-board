@@ -63,10 +63,12 @@
         :get-member-items="getMemberItems"
         :current-user-id="currentUser.id"
         :is-admin="isAdmin"
+        :copying-item-ids="copyingItemIds"
         @add-item="onAddItem"
         @edit-item="openItemModal"
         @drop-item="handleItemDrop"
         @move-member-up="moveMemberUp"
+        @copy-item-week="copyItemToAdjacentWeek"
       />
     </template>
 
@@ -127,6 +129,7 @@ const {
   onImportSourceYearChange,
   onImportSourceWeekChange,
   copySelectedMemberWeek,
+  copyingItemIds, copyItemToAdjacentWeek,
   exportJson
 } = useBoardStore();
 
