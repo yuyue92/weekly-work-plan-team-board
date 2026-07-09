@@ -553,9 +553,15 @@ export function useBoardStore() {
     const matched = findWeekByStartDate(targetStartDate, state.year);
 
     if (!matched) {
-      showToast(direction < 0 ? "没有更早的可选周了。" : "没有更晚的可选周了。");
+      showToast(direction < 0 ? "No earlier week available." : "No later week available.");
       return;
     }
+
+    const title = item.work_item || "This Work Item";
+    const directionLabel = direction < 0 ? "previous week" : "next week";
+    const confirmMsg =
+      `Confirm copy「${title}」to ${directionLabel}（${matched.week.label}）？`;
+    if (!confirm(confirmMsg)) return;
 
     copyingItemIds[itemId] = true;
     try {
@@ -568,7 +574,7 @@ export function useBoardStore() {
       });
       if (error) throw error;
 
-      const yearHint = matched.year !== state.year ? `（${matched.year} 年）` : "";
+      const yearHint = matched.year !== state.year ? `（${matched.year} year）` : "";
       showToast(`Copied to ${matched.week.label}${yearHint}`, 2500);
 
       // 极端情况下目标周恰好也是当前显示的周（理论上不会发生，直接兜底刷新一下）
@@ -591,7 +597,7 @@ export function useBoardStore() {
   // ── 清空当前周（仅 admin）─────────────────────────
   async function clearCurrentWeek() {
     const week = weekOptions.value.find(w => w.key === state.weekKey);
-    if (!confirm(`Are you sure you want to clear all data for ${teamName} in ${weekLabel}?`)) return;
+    if (!confirm(`Are you sure you want to clear all data for ${state.teamName} in ${week?.label}?`)) return;
     const { error } = await supabase
       .from("work_items")
       .delete()
