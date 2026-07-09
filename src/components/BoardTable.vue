@@ -25,7 +25,7 @@
                     v-if="isAdmin && idx > 0"
                     type="button"
                     class="member-move-up"
-                    title="上移"
+                    title="Move Up"
                     @click="$emit('move-member-up', member.userId)">↑</button>
                 </div>
               </td>

@@ -22,7 +22,7 @@
               ref="workItemInput"
               class="form-control"
               type="text"
-              placeholder="输入 work item"
+              placeholder="Enter work item"
               v-model="draft.work_item"
               @input="$emit('input-change')"
             />
@@ -117,7 +117,7 @@
           @click="$emit('delete-item')"
         >Delete Work Item</button>
         <div class="actions">
-          <span class="save-status">{{ saving ? "保存中..." : saveHint }}</span>
+          <span class="save-status">{{ saving ? "Saving..." : saveHint }}</span>
           <button
             class="btn btn-primary"
             type="button"

@@ -8,7 +8,7 @@
           <span class="logo-registered">®</span>
         </div>
         <h1 class="app-title">Weekly Work Plan</h1>
-        <p class="app-subtitle">Team board version: Pending / Processing / Done, task-level half-day schedule.</p>
+        <!-- <p class="app-subtitle">Team board version: Pending / Processing / Done, task-level half-day schedule.</p> -->
       </div>
       <div class="header-right">
         <span class="badge">{{ currentUser.displayName || currentUser.email }}</span>

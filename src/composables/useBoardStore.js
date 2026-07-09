@@ -40,7 +40,7 @@ let toastTimer       = null;
 const modalOpen     = ref(false);
 const modalContext  = ref(null);   // { ownerId, ownerName, status, itemId, isNew }
 const modalDraft    = ref(null);
-const modalSaveHint = ref("编辑内容不会自动保存");
+const modalSaveHint = ref("Changes are not saved automatically");
 const modalSaving   = ref(false);
 
 // 管理员按成员复制周数据
@@ -194,7 +194,7 @@ export function useBoardStore() {
         teams = data || [];
       } else {
         if (!userId) {
-          noTeamMessage.value = "无法识别当前登录用户，请重新登录。";
+          noTeamMessage.value = "Unable to identify the current user. Please log in again.";
           return;
         }
 
@@ -208,7 +208,7 @@ export function useBoardStore() {
         const teamIds = [...new Set((memberships || []).map(row => row.team_id).filter(Boolean))];
 
         if (!teamIds.length) {
-          noTeamMessage.value = "你的账号尚未加入任何 Team，请联系管理员分配 Team。";
+          noTeamMessage.value = "Your account hasn't been added to any team yet. Please contact an administrator.";
           return;
         }
 
@@ -229,7 +229,7 @@ export function useBoardStore() {
       }
     } catch (error) {
       console.error("初始化 Team 失败", error);
-      noTeamMessage.value = "加载 Team 失败，请刷新页面或联系管理员。";
+      noTeamMessage.value = "Failed to load teams. Please refresh the page or contact an administrator.";
     } finally {
       boardLoading.value = false;
     }
@@ -300,7 +300,7 @@ export function useBoardStore() {
       p_user_b:  previous.userId
     });
     if (error) {
-      showToast("排序失败：" + error.message);
+      showToast("Sort failed:" + error.message);
       return;
     }
 
@@ -370,7 +370,7 @@ export function useBoardStore() {
     modalContext.value = { ownerId: userId, ownerName, status, itemId: null, isNew: true };
     modalDraft.value   = createEmptyItem(userId);
     modalDraft.value.status = status;
-    modalSaveHint.value = "编辑内容不会自动保存";
+    modalSaveHint.value = "Changes are not saved automatically";
     modalOpen.value = true;
   }
 
@@ -387,7 +387,7 @@ export function useBoardStore() {
       isNew:     false
     };
     modalDraft.value    = cloneItem(item);
-    modalSaveHint.value = "编辑内容不会自动保存";
+    modalSaveHint.value = "Changes are not saved automatically";
     modalOpen.value     = true;
   }
 
@@ -399,8 +399,8 @@ export function useBoardStore() {
 
   function updateModalSaveHint(hasChange = false) {
     modalSaveHint.value = hasChange
-      ? "有未保存修改，点击「保存并关闭」后生效"
-      : "编辑内容不会自动保存";
+      ? 'You have unsaved changes. Click "Save & Close" to apply them.'
+      : "Changes are not saved automatically";
   }
 
   // ── 保存并关闭模态框 ───────────────────────────────
@@ -409,7 +409,7 @@ export function useBoardStore() {
     const item = modalDraft.value;
 
     if (!isMeaningfulItem(item)) {
-      showToast("请至少填写 Work Item 或一条有效 Task 内容。");
+      showToast("Please fill in the Work Item or at least one valid Task.");
       return;
     }
 
@@ -421,10 +421,10 @@ export function useBoardStore() {
         await updateItem(item);
       }
       await loadBoard();
-      showToast(modalContext.value.isNew ? "Work Item 已新增" : "Work Item 已保存");
+      showToast(modalContext.value.isNew ? "Work Item added" : "Work Item saved");
       closeModal();
     } catch (err) {
-      showToast("保存失败：" + (err.message || String(err)));
+      showToast("Save failed:" + (err.message || String(err)));
     } finally {
       modalSaving.value = false;
     }
@@ -474,11 +474,11 @@ export function useBoardStore() {
     if (!modalContext.value) return;
     if (modalContext.value.isNew) {
       closeModal();
-      showToast("已取消");
+      showToast("Cancelled");
       return;
     }
     const title = modalDraft.value?.work_item || "当前 Work Item";
-    if (!confirm(`确定删除「${title}」吗？`)) return;
+    if (!confirm(`Are you sure you want to delete「${title}」？`)) return;
 
     modalSaving.value = true;
     try {
@@ -489,10 +489,10 @@ export function useBoardStore() {
         .eq("id", modalContext.value.itemId);
       if (error) throw error;
       await loadBoard();
-      showToast("Work Item 已删除");
+      showToast("Work Item deleted");
       closeModal();
     } catch (err) {
-      showToast("删除失败：" + (err.message || String(err)));
+      showToast("Delete failed:" + (err.message || String(err)));
     } finally {
       modalSaving.value = false;
     }
@@ -509,8 +509,8 @@ export function useBoardStore() {
   function deleteTaskFromCurrentItem(index) {
     if (!modalDraft.value) return;
     const task = modalDraft.value.tasks[index];
-    const name = task?.task_name || `第 ${index + 1} 条 task`;
-    if (!confirm(`确定删除「${name}」吗？`)) return;
+    const name = task?.task_name || `Task ${index + 1}`;
+    if (!confirm(`Are you sure you want to delete「${name}」？`)) return;
     modalDraft.value.tasks.splice(index, 1);
     updateModalSaveHint(true);
   }
@@ -528,10 +528,10 @@ export function useBoardStore() {
         .eq("id", itemId);
       if (error) throw error;
       await loadBoard();
-      showToast("Work Item 已移动", 3000);
+      showToast("Work Item moved", 3000);
     } catch (err) {
       const isRlsDenied = /row-level security/i.test(err.message || "");
-      showToast(isRlsDenied ? "没有权限把该 Work Item 移动到其他成员名下，如需重新分配请联系管理员。" : "移动失败：" + (err.message || String(err)), 3000);
+      showToast(isRlsDenied ? "You don't have permission to move this Work Item to another member. Please contact an administrator to reassign it." : "Move failed:" + (err.message || String(err)), 3000);
       if (isRlsDenied) await loadBoard(); // 避免卡片在界面上残留"已移动"的错觉
     }
   }
@@ -569,7 +569,7 @@ export function useBoardStore() {
       if (error) throw error;
 
       const yearHint = matched.year !== state.year ? `（${matched.year} 年）` : "";
-      showToast(`已复制到 ${matched.week.label}${yearHint}`, 2500);
+      showToast(`Copied to ${matched.week.label}${yearHint}`, 2500);
 
       // 极端情况下目标周恰好也是当前显示的周（理论上不会发生，直接兜底刷新一下）
       if (matched.year === state.year && matched.week.key === state.weekKey) {
@@ -579,8 +579,8 @@ export function useBoardStore() {
       const isRlsDenied = /row-level security/i.test(err.message || "");
       showToast(
         isRlsDenied
-          ? "没有权限复制该 Work Item，如需处理请联系管理员。"
-          : "复制失败：" + (err.message || String(err)),
+          ? "You don't have permission to copy this Work Item. Please contact an administrator."
+          : "Copy failed:" + (err.message || String(err)),
         3000
       );
     } finally {
@@ -591,16 +591,16 @@ export function useBoardStore() {
   // ── 清空当前周（仅 admin）─────────────────────────
   async function clearCurrentWeek() {
     const week = weekOptions.value.find(w => w.key === state.weekKey);
-    if (!confirm(`确定清空 ${state.teamName} 的 ${week?.label} 所有数据吗？`)) return;
+    if (!confirm(`Are you sure you want to clear all data for ${teamName} in ${weekLabel}?`)) return;
     const { error } = await supabase
       .from("work_items")
       .delete()
       .eq("team_id", state.teamId)
       .eq("year", state.year)
       .eq("week_key", state.weekKey);
-    if (error) { showToast("清空失败：" + error.message); return; }
+    if (error) { showToast("Clear failed:" + error.message); return; }
     await loadBoard();
-    showToast("当前周已清空");
+    showToast("Current week cleared");
   }
 
   // ── 按成员复制某一周到当前周（仅 admin）──────────
@@ -618,7 +618,7 @@ export function useBoardStore() {
     );
 
     if (!member || !sourceWeek || !targetWeek) {
-      showToast("请选择来源周和需要导入的成员。");
+      showToast("Please select a source week and a member to import.");
       return;
     }
 
@@ -626,7 +626,7 @@ export function useBoardStore() {
       Number(importState.sourceYear) === Number(state.year) &&
       importState.sourceWeekKey === state.weekKey
     ) {
-      showToast("来源周不能与当前目标周相同。");
+      showToast("The source week can't be the same as the current target week.");
       return;
     }
 
@@ -669,7 +669,7 @@ export function useBoardStore() {
         } 条 Work Item`
       );
     } catch (err) {
-      showToast("导入失败：" + (err.message || String(err)));
+      showToast("Import failed:" + (err.message || String(err)));
     } finally {
       importSaving.value = false;
     }
@@ -696,7 +696,7 @@ export function useBoardStore() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    showToast("JSON 已导出");
+    showToast("JSON exported");
   }
 
   // ── computed ──────────────────────────────────────

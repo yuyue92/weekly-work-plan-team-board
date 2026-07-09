@@ -15,8 +15,8 @@
         <button
           class="btn btn-light btn-sm icon-btn"
           type="button"
-          title="复制到上一周"
-          aria-label="复制到上一周"
+          title="Copy to previous week"
+          aria-label="Copy to previous week"
           :disabled="isCopying"
           @click.stop="$emit('copy-week', memberId, status, item.id, -1)"
         >‹</button>
@@ -28,8 +28,8 @@
         <button
           class="btn btn-light btn-sm icon-btn"
           type="button"
-          title="复制到下一周"
-          aria-label="复制到下一周"
+          title="Copy to next week"
+          aria-label="Copy to next week"
           :disabled="isCopying"
           @click.stop="$emit('copy-week', memberId, status, item.id, 1)"
         >›</button>
@@ -54,7 +54,7 @@
         <div class="item-preview-scroll">
           <div class="preview-title">{{ item.work_item || "Untitled Work Item" }}</div>
           <template v-if="!item.tasks.length">
-            <div class="preview-task">暂无 task，点击卡片可新增。</div>
+            <div class="preview-task">No tasks yet. Click the card to add one.</div>
           </template>
           <template v-else>
             <div class="preview-task" v-for="task in item.tasks.slice(0, 4)" :key="task.id || task.task_name">
@@ -70,7 +70,7 @@
               </div>
             </div>
             <div class="preview-task" v-if="item.tasks.length > 4">
-              还有 {{ item.tasks.length - 4 }} 条 task...
+              {{ item.tasks.length - 4 }} more task(s)...
             </div>
           </template>
         </div>

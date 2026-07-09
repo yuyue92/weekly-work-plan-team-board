@@ -240,7 +240,7 @@
 
     .import-controls {
       display: grid;
-      grid-template-columns: 340px 200px 120px 240px 100px;
+      grid-template-columns: 240px 200px 120px 240px 160px;
       align-items: end;
       gap: 10px;
       width: 100%;

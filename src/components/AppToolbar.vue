@@ -29,8 +29,8 @@
             <button
               class="week-nav-btn"
               type="button"
-              title="上一周"
-              aria-label="切换到上一周"
+              title="Previous Week"
+              aria-label="Switch to previous week"
               :disabled="!canGoPreviousWeek"
               @click="switchWeek(-1)">‹</button>
             <select
@@ -44,8 +44,8 @@
             <button
               class="week-nav-btn"
               type="button"
-              title="下一周"
-              aria-label="切换到下一周"
+              title="Next Week"
+              aria-label="Switch to next week"
               :disabled="!canGoNextWeek"
               @click="switchWeek(1)">›</button>
           </div>
@@ -67,7 +67,7 @@
               class="btn btn-outline-danger"
               type="button"
               @click="$emit('clear-week')"
-            >清空当前周</button>
+            >Clear Current Week</button>
           </div>
         </div>
 
@@ -75,13 +75,10 @@
           
           <div class="import-controls">
             <div class="import-panel-heading">
-              <strong>一键导入（按成员）</strong>
-              <span>
-                复制来源周数据到当前周 {{ state.weekKey }}，日期按周差自动顺延。
-              </span>
+              <strong>One-click Import (by Member)</strong>
             </div>
             <div class="form-group import-member-group">
-              <label for="importMemberSelect">成员</label>
+              <label for="importMemberSelect">Member</label>
               <select
                 id="importMemberSelect"
                 class="form-select"
@@ -99,7 +96,7 @@
             </div>
 
             <div class="form-group import-year-group">
-              <label for="importSourceYear">来源年</label>
+              <label for="importSourceYear">Source Year</label>
               <input
                 id="importSourceYear"
                 class="form-control"
@@ -113,7 +110,7 @@
             </div>
 
             <div class="form-group import-week-group">
-              <label for="importSourceWeek">来源周</label>
+              <label for="importSourceWeek">Source Week</label>
               <select
                 id="importSourceWeek"
                 class="form-select"
@@ -133,7 +130,7 @@
             <div class="form-group import-action-group">
               <label>&nbsp;</label>
               <button
-                class="btn btn-primary"
+                class="btn btn-outline-primary"
                 type="button"
                 :disabled="
                   importSaving ||
@@ -146,7 +143,7 @@
                 "
                 @click="$emit('copy-member-week')"
               >
-                {{ importSaving ? "导入中..." : "导入该成员" }}
+                {{ importSaving ? "Importing..." : "Import This Member" }}
               </button>
             </div>
         </div>
