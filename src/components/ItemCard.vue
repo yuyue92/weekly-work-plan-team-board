@@ -62,11 +62,11 @@
               <div>{{ truncate(task.description || task.remark_blocker || "", 80) }}</div>
               <div class="preview-slots">
                 <span
-                  v-for="(key, idx) in PREVIEW_SLOT_KEYS"
+                  v-for="(key, idx) in SLOT_KEYS"
                   :key="key"
                   class="preview-slot"
                   :class="{ checked: task.slots?.[key] }"
-                >{{ PREVIEW_SLOT_LABELS[idx] }}</span>
+                >{{ SLOT_LABELS[idx] }}</span>
               </div>
             </div>
             <div class="preview-task" v-if="item.tasks.length > 4">
@@ -81,7 +81,7 @@
 
 <script setup>
 import { computed, ref, reactive, nextTick } from "vue";
-import { PREVIEW_SLOT_KEYS, PREVIEW_SLOT_LABELS } from "../constants/index.js";
+import { SLOT_KEYS, SLOT_LABELS } from "../constants/index.js";
 import { countCheckedSlots } from "../utils/model.js";
 import { truncate } from "../utils/helpers.js";
 

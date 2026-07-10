@@ -26,13 +26,3 @@ export const SLOT_LABELS = [
   "Mon AM", "Tue AM", "Wed AM", "Thu AM", "Fri AM",
   "Mon PM", "Tue PM", "Wed PM", "Thu PM", "Fri PM"
 ];
-
-export const PREVIEW_SLOT_KEYS = [
-  "mon_am", "mon_pm", "tue_am", "tue_pm", "wed_am",
-  "wed_pm", "thu_am", "thu_pm", "fri_am", "fri_pm"
-];
-
-export const PREVIEW_SLOT_LABELS = [
-  "Mon AM", "Mon PM", "Tue AM", "Tue PM", "Wed AM",
-  "Wed PM", "Thu AM", "Thu PM", "Fri AM", "Fri PM"
-];
