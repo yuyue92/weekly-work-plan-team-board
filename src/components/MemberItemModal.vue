@@ -69,7 +69,11 @@
                     </select>
                   </div>
                   <div class="form-group hours-group" v-for="(key, idx) in hourKeys" :key="key">
-                    <label>{{ weekdayLabels[idx] }}</label>
+                    <!-- <label>{{ weekdayLabels[idx] }}</label> -->
+                     <label>
+                        {{ weekdayLabels[idx] }}
+                        <span class="hours-date">{{ formatMonthDayLabel(weekdayDates[idx]) }}</span>
+                    </label>
                     <select class="form-select" v-model.number="item.hours[key]" @change="$emit('dirty')">
                       <option v-for="h in hourOptions" :key="h" :value="h">{{ h }}</option>
                     </select>
@@ -120,11 +124,13 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch, onBeforeUnmount } from "vue";
 import { STATUS_KEYS } from "../constants/index.js";
+import { formatMonthDayLabel } from "../utils/date.js";
+
 import LoadingOverlay from "./LoadingOverlay.vue";
 
-defineProps({
+const props = defineProps({
   open:          { type: Boolean, default: false },
   context:       { type: Object,  default: null },   // { memberId, displayName }
   draft:         { type: Object,  required: true },  // { pending:[], processing:[], done:[] }
@@ -136,6 +142,7 @@ defineProps({
   hourKeys:      { type: Array,   required: true },
   hourOptions:   { type: Array,   required: true },
   weekdayLabels: { type: Array,   required: true },
+  weekdayDates:  { type: Array,   default: () => [] },
   saveHint:      { type: String,  default: "" },
   saving:        { type: Boolean, default: false }
 });
@@ -149,6 +156,26 @@ const emit = defineEmits([
 
 const dragSource     = ref(null); // { status, index }
 const dragOverStatus = ref("");
+
+// 弹框打开期间锁住 body 滚动，避免弹框内部滚到顶/底时把滚动"传导"给背后的主页面
+let scrolledLocked = false;
+function lockBodyScroll() {
+  if (scrolledLocked) return;
+  scrolledLocked = true;
+  document.body.classList.add("body-scroll-locked");
+}
+function unlockBodyScroll() {
+  if (!scrolledLocked) return;
+  scrolledLocked = false;
+  document.body.classList.remove("body-scroll-locked");
+}
+
+watch(() => props.open, (isOpen) => {
+  if (isOpen) lockBodyScroll();
+  else unlockBodyScroll();
+}, { immediate: true });
+
+onBeforeUnmount(unlockBodyScroll); // 组件被卸载时兜底恢复，防止锁死整个页面
 
 function onItemDragStart(event, status, index) {
   dragSource.value = { status, index };

@@ -30,8 +30,13 @@
                   v-if="isAdmin || member.userId === currentUserId"
                   class="btn btn-outline-primary btn-sm member-edit-btn"
                   type="button"
-                  @click="$emit('edit-member', member.userId)"
-                >Edit</button>
+                  @click="$emit('edit-member', member.userId)">
+                  <svg class="edit-icon" viewBox="0 0 20 20" width="13" height="13" aria-hidden="true">
+                    <path fill="currentColor" d="M14.85 2.85a1.5 1.5 0 0 1 2.12 0l.18.18a1.5 1.5 0 0 1 0 2.12L8.4 13.9l-3 .7.7-3 8.75-8.75Z"/>
+                    <path fill="currentColor" d="M3 16.5h14v1.5H3z"/>
+                  </svg>
+                  <span>Edit</span>
+                </button>
               </td>
               <td v-for="status in STATUS_KEYS" :key="status" class="status-col">
                 <div

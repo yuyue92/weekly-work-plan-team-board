@@ -713,11 +713,14 @@
     .member-modal-body { overflow-y: auto; padding: 16px 20px; }
 
     .member-section { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+    .member-modal-body .member-section:nth-child(1) { background: linear-gradient(180deg, #fff8e1 0%, #fffdf3 100%);}
+    .member-modal-body .member-section:nth-child(2) { background: linear-gradient(180deg, #e7f1ff 0%, #f6fbff 100%); }
+    .member-modal-body .member-section:nth-child(3) { background: linear-gradient(180deg, #e9f7ef 0%, #f7fffa 100%); }
     .member-section.drag-over { border-color: #0d6efd; background: #f0f7ff; }
     .member-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .member-section-count { color: #64748b; font-size: 13px; margin-right: auto; }
 
-    .member-item-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+    .member-item-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; margin-left: 40px; }
     .member-item-row-main { display: flex; align-items: flex-start; gap: 8px; }
     .member-item-drag-handle {
       flex-shrink: 0;
@@ -739,6 +742,13 @@
       flex: 1;
     }
     .hours-group select { padding-left: 4px; padding-right: 4px; }
+    .hours-group label { line-height: 1.3; }
+    .hours-date {
+      display: block;
+      font-weight: 400;
+      color: #94a3b8;
+      font-size: 11px;
+    }
     .member-item-delete { white-space: nowrap; }
 
     .member-item-tasks { margin-top: 10px; margin-left: 24px; border-left: 2px solid #e2e8f0; padding-left: 12px; }
@@ -748,6 +758,7 @@
 
     /* ── 主看板：成员列 Edit 按钮 / 卡片工时 tag ── */
     .member-edit-btn { margin-top: 16px; margin-left: 30px; }
+    .member-edit-btn>span { padding-left: 8px; }
     .item-hours { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
     .hour-tag { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
 
@@ -1243,3 +1254,5 @@
 
     .loading-fade-enter-active, .loading-fade-leave-active { transition: opacity 0.15s ease; }
     .loading-fade-enter-from, .loading-fade-leave-to { opacity: 0; }
+
+    .body-scroll-locked { overflow: hidden;}

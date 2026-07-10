@@ -654,6 +654,11 @@ export function useBoardStore() {
   const endDateDisplay   = computed(() => weekOptions.value.find(w => w.key === state.weekKey)?.endDate || "");
   const currentMembers   = computed(() => membersData.value);
 
+  // 当前周 Mon~Fri 五天的具体日期（"YYYY-MM-DD"），供成员编辑弹框在工时列标题下面展示
+  const currentWeekDays  = computed(() =>
+    weekOptions.value.find(w => w.key === state.weekKey)?.days || []
+  );
+
   return {
     STATUS_KEYS, STATUS_LABELS,
     state, weekOptions, teamsData, currentMembers,
@@ -662,7 +667,7 @@ export function useBoardStore() {
     memberModalOpen, memberModalContext, memberModalDraft,
     memberModalSaveHint, memberModalSaving,
     importState, importWeekOptions, importSaving,
-    boardTitle, startDateDisplay, endDateDisplay,
+    boardTitle, startDateDisplay, endDateDisplay, currentWeekDays,
     copyingItemIds,
     init,
     onTeamChange, onYearChange, onWeekChange,

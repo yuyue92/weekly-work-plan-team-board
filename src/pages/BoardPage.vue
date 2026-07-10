@@ -82,6 +82,7 @@
     :hour-keys="HOUR_KEYS"
     :hour-options="HOUR_OPTIONS"
     :weekday-labels="WEEKDAY_LABELS"
+    :weekday-dates="currentWeekDays"
     :save-hint="memberModalSaveHint"
     :saving="memberModalSaving"
     @close="closeMemberModal"
@@ -121,7 +122,7 @@ const {
   toastMessage, toastVisible,
   memberModalOpen, memberModalContext, memberModalDraft, memberModalSaveHint, memberModalSaving,
   importState, importWeekOptions, importSaving,
-  boardTitle, startDateDisplay, endDateDisplay,
+  boardTitle, startDateDisplay, endDateDisplay, currentWeekDays,
   copyingItemIds, copyItemToAdjacentWeek,
   init,
   onTeamChange, onYearChange, onWeekChange,

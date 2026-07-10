@@ -1,3 +1,5 @@
+const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 export function startOfWeekMonday(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const day = d.getDay();
@@ -26,6 +28,13 @@ export function formatTimestampForFile(date) {
 
 export function pad2(v) {
   return String(v).padStart(2, "0");
+}
+
+// "2026-01-10" → "Jan-10"，用于弹框里 Mon~Fri 下面展示具体日期
+export function formatMonthDayLabel(dateString) {
+  if (!dateString) return "";
+  const date = parseDate(dateString);
+  return `${MONTH_ABBR[date.getMonth()]}-${pad2(date.getDate())}`;
 }
 
 export function buildWorkWeeks(year) {
