@@ -1,9 +1,7 @@
 <template>
   <section class="card board-card">
     <div class="board-header">
-      <div>
-        <h2 class="board-title">{{ boardTitle }}</h2>
-      </div>
+      <div><h2 class="board-title">{{ boardTitle }}</h2></div>
     </div>
     <div class="card-body">
       <div class="table-responsive">
@@ -25,15 +23,17 @@
                     v-if="isAdmin && idx > 0"
                     type="button"
                     class="member-move-up"
-                    title="Move Up"
+                    title="Move up"
                     @click="$emit('move-member-up', member.userId)">↑</button>
                 </div>
+                <button
+                  v-if="isAdmin || member.userId === currentUserId"
+                  class="btn btn-outline-primary btn-sm member-edit-btn"
+                  type="button"
+                  @click="$emit('edit-member', member.userId)"
+                >Edit</button>
               </td>
-              <td
-                v-for="status in STATUS_KEYS"
-                :key="status"
-                class="status-col"
-              >
+              <td v-for="status in STATUS_KEYS" :key="status" class="status-col">
                 <div
                   class="drop-zone"
                   :class="{ 'drag-over': dragOverKey === member.userId + '|' + status }"
@@ -41,18 +41,6 @@
                   @dragleave="onDragLeave(member.userId, status, $event)"
                   @drop.prevent="onDrop(member.userId, status)"
                 >
-                  <!-- 只有自己那行或 admin 才能新增 -->
-                  <div
-                    v-if="isAdmin || member.userId === currentUserId"
-                    class="zone-actions"
-                  >
-                    <button
-                      class="btn btn-outline-primary btn-sm"
-                      type="button"
-                      @click="$emit('add-item', member.userId, status)"
-                    >＋ Work Item</button>
-                  </div>
-
                   <ItemCard
                     v-for="item in getMemberItems(member.userId, status)"
                     :key="item.id"
@@ -62,12 +50,10 @@
                     :can-edit="isAdmin || member.userId === currentUserId"
                     :draggable-item="isAdmin || member.userId === currentUserId"
                     :is-copying="Boolean(copyingItemIds[item.id])"
-                    @edit="(uid, s, id) => $emit('edit-item', uid, s, id)"
                     @drag-start="onItemDragStart"
                     @drag-end="onItemDragEnd"
                     @copy-week="(uid, s, id, dir) => $emit('copy-item-week', uid, s, id, dir)"
                   />
-
                   <div v-if="!getMemberItems(member.userId, status).length" class="empty-note">
                     No {{ STATUS_LABELS[status] }} items
                   </div>
@@ -88,20 +74,18 @@ import { STATUS_KEYS, STATUS_LABELS } from "../constants/index.js";
 
 const props = defineProps({
   boardTitle:     { type: String,   default: "" },
-  members:        { type: Array,    required: true },  // [{ userId, displayName }]
+  members:        { type: Array,    required: true },
   getMemberItems: { type: Function, required: true },
   currentUserId:  { type: String,   default: "" },
   isAdmin:        { type: Boolean,  default: false },
-  copyingItemIds: { type: Object,   default: () => ({}) } // { [itemId]: true } 正在复制中的卡片
+  copyingItemIds: { type: Object,   default: () => ({}) }
 });
 
-const emit = defineEmits(["add-item", "edit-item", "drop-item", "move-member-up", "copy-item-week"]);
+const emit = defineEmits(["edit-member", "drop-item", "move-member-up", "copy-item-week"]);
 
 const dragPayload = ref(null);
 const dragOverKey = ref("");
 
-// 和 ItemCard 的 draggableItem 权限保持一致：非 admin 不能把卡片拖给别的成员。
-// 后端 RLS 已经会拦截，这里提前判断只是为了避免误操作、给出更友好的反馈。
 function canDropTo(userId) {
   return props.isAdmin || userId === props.currentUserId;
 }

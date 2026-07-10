@@ -61,6 +61,7 @@
       padding-right: 12px;
       color: #0b5cab;
       white-space: nowrap;
+      margin-top: -4px;
     }
 
     .logo-pccw {
@@ -690,6 +691,7 @@
 
     .footer-note { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 8px 2px 0; }
 
+    /* ── 弹框基础（配合 <Transition name="modal-fade">，靠 v-if 控制挂载/卸载）── */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -701,31 +703,56 @@
       z-index: 1000;
     }
 
-    /* 弹框淡入淡出：backdrop 只做透明度过渡，modal 卡片再叠加一点缩放/位移，效果更柔和 */
-    .modal-fade-enter-active {
-      transition: opacity 0.4s ease-out;
+    .modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s ease; }
+    .modal-fade-enter-active .modal, .modal-fade-leave-active .modal { transition: opacity 0.2s ease, transform 0.2s ease; }
+    .modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+    .modal-fade-enter-from .modal, .modal-fade-leave-to .modal { opacity: 0; transform: translateY(-12px) scale(0.98); }
+
+    /* ── 成员编辑弹框 ── */
+    .member-modal { width: min(1280px, 96vw); max-height: 92vh; }
+    .member-modal-body { overflow-y: auto; padding: 16px 20px; }
+
+    .member-section { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+    .member-section.drag-over { border-color: #0d6efd; background: #f0f7ff; }
+    .member-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .member-section-count { color: #64748b; font-size: 13px; margin-right: auto; }
+
+    .member-item-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+    .member-item-row-main { display: flex; align-items: flex-start; gap: 8px; }
+    .member-item-drag-handle {
+      flex-shrink: 0;
+      cursor: grab;
+      user-select: none;
+      color: #94a3b8;
+      font-size: 16px;
+      line-height: 1;
+      padding: 4px 2px;
+      margin-top: 4px;
     }
-    .modal-fade-leave-active {
-      transition: opacity 0.3s ease-in;  /* 淡出稍快，缓动不同 */
+    .member-item-drag-handle:active { cursor: grabbing; }
+
+    .member-item-fields {
+      display: grid;
+      grid-template-columns: 1.6fr 1.2fr 1fr 0.8fr repeat(5, 70px) auto;
+      gap: 8px;
+      align-items: end;
+      flex: 1;
     }
-    .modal-fade-enter-active .modal {
-      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-    }
-    .modal-fade-leave-active .modal {
-      transition: opacity 0.3s ease-in, transform 0.3s ease-in;
-    }
-    .modal-fade-enter-from,
-    .modal-fade-leave-to {
-      opacity: 0;
-    }
-    .modal-fade-enter-from .modal,
-    .modal-fade-leave-to .modal {
-      opacity: 0;
-      transform: translateY(-12px) scale(0.98);
-    }
+    .hours-group select { padding-left: 4px; padding-right: 4px; }
+    .member-item-delete { white-space: nowrap; }
+
+    .member-item-tasks { margin-top: 10px; margin-left: 24px; border-left: 2px solid #e2e8f0; padding-left: 12px; }
+    .member-tasks-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-weight: 600; }
+    .member-task-row { display: grid; grid-template-columns: 1fr 1.4fr 1fr auto; gap: 8px; margin-bottom: 6px; align-items: center; }
+    .btn-icon-danger { border: none; background: none; color: #dc3545; cursor: pointer; font-size: 15px; }
+
+    /* ── 主看板：成员列 Edit 按钮 / 卡片工时 tag ── */
+    .member-edit-btn { margin-top: 16px; margin-left: 30px; }
+    .item-hours { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .hour-tag { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
 
     .modal {
-      width: min(1180px, 96vw);
+      width: min(1280px, 96vw);
       max-height: 92vh;
       overflow: hidden;
       border-radius: 16px;
@@ -733,6 +760,7 @@
       box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     .modal-header {
@@ -1181,3 +1209,37 @@
       color: var(--muted);
       font-size: 14px;
     }
+
+    .board-area { position: relative; }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 1100;
+    }
+    .loading-overlay-inline { position: absolute; }
+
+    .loading-spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .spinner-circle {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: loading-spin 0.8s linear infinite;
+    }
+    .loading-message { color: #fff; font-size: 14px; font-weight: 600; }
+
+    @keyframes loading-spin { to { transform: rotate(360deg); } }
+
+    .loading-fade-enter-active, .loading-fade-leave-active { transition: opacity 0.15s ease; }
+    .loading-fade-enter-from, .loading-fade-leave-to { opacity: 0; }
