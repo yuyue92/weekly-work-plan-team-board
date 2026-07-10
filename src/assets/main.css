@@ -709,7 +709,7 @@
     .modal-fade-enter-from .modal, .modal-fade-leave-to .modal { opacity: 0; transform: translateY(-12px) scale(0.98); }
 
     /* ── 成员编辑弹框 ── */
-    .member-modal { width: min(1280px, 96vw); max-height: 92vh; }
+    .member-modal { width: max(600px, calc(100vw - 60px)); height: max(400px, calc(100vh - 30px)); }
     .member-modal-body { overflow-y: auto; padding: 16px 20px; }
 
     .member-section { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
