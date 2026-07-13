@@ -9,6 +9,14 @@
       <div class="modal-header">
         <h3 id="memberModalTitle" class="modal-title">{{ context.displayName }}</h3>
         <div class="modal-subtitle">{{ team }} · {{ weekLabel }}</div>
+        <div class="modal-hour-summary">
+          <span
+            v-for="(key, idx) in hourKeys"
+            :key="key"
+            class="tag hour-tag"
+            :class="hourTagClass(weeklyHours[key])"
+          >{{ weekdayLabels[idx] }}: {{ weeklyHours[key] }}</span>
+        </div>
         <button class="btn btn-light" type="button" :disabled="saving" @click="$emit('close')">×</button>
       </div>
 
@@ -48,15 +56,19 @@
                 >⠿</span>
                 <div class="member-item-fields">
                   <div class="form-group">
-                    <label>Item Name</label>
-                    <input class="form-control" type="text" placeholder="Enter work item" v-model="item.work_item" @input="$emit('dirty')" />
-                  </div>
-                  <div class="form-group">
                     <label>Project</label>
                     <select class="form-select" v-model="item.project_name" @change="$emit('dirty')">
                       <option value="">-</option>
                       <option v-for="p in projectNames" :key="p" :value="p">{{ p }}</option>
                     </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Item Name</label>
+                    <input class="form-control" type="text" placeholder="Enter work item" v-model="item.work_item" @input="$emit('dirty')" />
+                  </div>
+                  <div class="form-group">
+                    <label>Ref ID</label>
+                    <input class="form-control" type="text" placeholder="Ref ID" v-model="item.ref_id" @input="$emit('dirty')" />
                   </div>
                   <div class="form-group">
                     <label>Expect Complete Date</label>
@@ -124,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { STATUS_KEYS } from "../constants/index.js";
 import { formatMonthDayLabel } from "../utils/date.js";
 
@@ -153,6 +165,24 @@ const emit = defineEmits([
   "add-task", "delete-task",
   "move-item"
 ]);
+
+// 弹框顶部的 Mon~Fri 工时汇总：基于当前草稿（三个状态段）实时计算，跟着编辑同步刷新
+const weeklyHours = computed(() => {
+  const totals = Object.fromEntries(props.hourKeys.map(k => [k, 0]));
+  STATUS_KEYS.forEach(status => {
+    (props.draft[status] || []).forEach(item => {
+      props.hourKeys.forEach(k => {
+        totals[k] += Number(item.hours?.[k]) || 0;
+      });
+    });
+  });
+  return totals;
+});
+function hourTagClass(value) {
+  if (value > 8) return "hour-over";
+  if (value === 8) return "hour-full";
+  return "";
+}
 
 const dragSource     = ref(null); // { status, index }
 const dragOverStatus = ref("");

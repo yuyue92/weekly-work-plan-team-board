@@ -756,7 +756,7 @@
 
     .member-item-fields {
       display: grid;
-      grid-template-columns: 1.6fr 1.2fr 1fr 0.8fr repeat(5, 70px) auto;
+      grid-template-columns: 1.1fr 1.4fr 0.9fr 1fr 0.8fr repeat(5, 70px) auto;
       gap: 8px;
       align-items: end;
       flex: 1;
@@ -781,6 +781,8 @@
     .member-edit-btn>span { padding-left: 8px; }
     .item-hours { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
     .hour-tag { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
+    .hour-tag.hour-full { background: #e6f6ec; color: #146c2e; border-color: #a3e0b8; }
+    .hour-tag.hour-over { background: #fdeceb; color: #b02a25; border-color: #f3b4b0; }
 
     .modal {
       overflow: hidden;
@@ -804,6 +806,21 @@
 
     .modal-title { margin: 0; font-size: 18px; color: #102a43; }
     .modal-subtitle { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .modal-hour-summary {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-content: center;
+      gap: 4px;
+    }
+    .modal-hour-summary .hour-tag {
+      padding: 1px 6px;
+      font-size: 11px;
+      line-height: 1.5;
+      border-radius: 999px;
+    }
+
     .modal-body { padding: 18px; overflow: auto; }
     .modal-footer { display: flex; justify-content: space-between; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); background: #fbfdff; }
 
