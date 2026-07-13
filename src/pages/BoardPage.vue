@@ -15,9 +15,7 @@
         <span class="badge badge-role" :class="isAdmin ? 'badge-admin' : 'badge-staff'">
           {{ isAdmin ? 'Admin' : 'Staff' }}
         </span>
-        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin')">
-          Member Management
-        </button>
+        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin')">Admin Settings</button>
         <button class="btn btn-light btn-sm" @click="doSignOut">Sign Out</button>
       </div>
     </header>
@@ -77,10 +75,10 @@
     :team="state.teamName"
     :week-label="boardTitle"
     :status-labels="STATUS_LABELS"
-    :priorities="PRIORITIES"
-    :project-names="PROJECT_NAMES"
+    :priorities="priorities"
+    :project-names="projectNames"
     :hour-keys="HOUR_KEYS"
-    :hour-options="HOUR_OPTIONS"
+    :hour-options="hourOptions"
     :weekday-labels="WEEKDAY_LABELS"
     :weekday-dates="currentWeekDays"
     :save-hint="memberModalSaveHint"
@@ -109,9 +107,7 @@ import LoadingOverlay from "../components/LoadingOverlay.vue";
 import ToastMessage from "../components/ToastMessage.vue";
 import { useAuth }        from "../composables/useAuth.js";
 import { useBoardStore }  from "../composables/useBoardStore.js";
-import {
-  STATUS_LABELS, PRIORITIES, PROJECT_NAMES, HOUR_KEYS, HOUR_OPTIONS, WEEKDAY_LABELS
-} from "../constants/index.js";
+import { STATUS_LABELS, HOUR_KEYS, WEEKDAY_LABELS } from "../constants/index.js";
 
 const router = useRouter();
 const { currentUser, isAdmin, signOut } = useAuth();
@@ -120,6 +116,7 @@ const {
   state, weekOptions, teamsData, currentMembers,
   boardLoading, noTeamMessage,
   toastMessage, toastVisible,
+  projectNames, priorities, hourOptions,
   memberModalOpen, memberModalContext, memberModalDraft, memberModalSaveHint, memberModalSaving,
   importState, importWeekOptions, importSaving,
   boardTitle, startDateDisplay, endDateDisplay, currentWeekDays,

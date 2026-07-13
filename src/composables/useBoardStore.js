@@ -33,6 +33,9 @@ const toastMessage   = ref("");
 const toastVisible   = ref(false);
 let toastTimer       = null;
 
+const listOptions     = ref([]);        // [{ id, list_type, name, sort_order }]，project/priority/hour 都在这一份里
+const settingsLoading = ref(true);
+
 // ── 成员级编辑弹框：一个弹框管理某成员当周的 Pending / Processing / Done 三段 ──
 const memberModalOpen    = ref(false);
 const memberModalContext = ref(null);  // { memberId, displayName }
@@ -152,11 +155,32 @@ export function useBoardStore() {
     closeMemberModal();
   }
 
+  // ── 拉取 Project / Priority / 工时选项（统一存在 list_options 表里）──
+  async function loadSettings() {
+    settingsLoading.value = true;
+    try {
+      const { data, error } = await supabase
+        .from("list_options")
+        .select("*")
+        .order("list_type")
+        .order("sort_order")
+        .order("name");
+      if (error) throw error;
+      listOptions.value = data || [];
+    } catch (error) {
+      console.error("Failed to load settings", error);
+      showToast("Failed to load Project/Priority/Hour options. Some dropdowns may be empty.", 3000);
+    } finally {
+      settingsLoading.value = false;
+    }
+  }
+
   // ── 初始化：按角色拉取 teams 列表 ───────────────────
   async function init(authContext = {}) {
     boardLoading.value = true;
     noTeamMessage.value = "";
     resetBoardState();
+    loadSettings(); // 和下面拉 team 的逻辑并行跑，不用互相等待
 
     const userId = authContext.userId;
     const isAdmin = Boolean(authContext.isAdmin);
@@ -654,6 +678,19 @@ export function useBoardStore() {
   const endDateDisplay   = computed(() => weekOptions.value.find(w => w.key === state.weekKey)?.endDate || "");
   const currentMembers   = computed(() => membersData.value);
 
+  const projectNames = computed(() =>
+    listOptions.value.filter(o => o.list_type === "project").map(o => o.name)
+  );
+  const priorities = computed(() =>
+    listOptions.value.filter(o => o.list_type === "priority").map(o => o.name)
+  );
+  const hourOptions = computed(() =>
+    listOptions.value
+      .filter(o => o.list_type === "hour")
+      .map(o => Number(o.name))
+      .filter(n => !Number.isNaN(n))
+  );
+
   // 当前周 Mon~Fri 五天的具体日期（"YYYY-MM-DD"），供成员编辑弹框在工时列标题下面展示
   const currentWeekDays  = computed(() =>
     weekOptions.value.find(w => w.key === state.weekKey)?.days || []
@@ -664,6 +701,8 @@ export function useBoardStore() {
     state, weekOptions, teamsData, currentMembers,
     boardData, boardLoading, noTeamMessage,
     toastMessage, toastVisible,
+    settingsLoading, listOptions,
+    hourOptions, projectNames, priorities, loadSettings,
     memberModalOpen, memberModalContext, memberModalDraft,
     memberModalSaveHint, memberModalSaving,
     importState, importWeekOptions, importSaving,

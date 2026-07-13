@@ -1,4 +1,4 @@
-import { PRIORITIES, HOUR_KEYS } from "../constants/index.js";
+import { HOUR_KEYS } from "../constants/index.js";
 import { formatDate } from "./date.js";
 
 // ── 前端 WorkItem 模型 ──────────────────────────────
@@ -60,7 +60,7 @@ export function rowToItem(row, tasks = []) {
     owner_id:             row.owner_id,
     work_item:            row.work_item            || "",
     project_name:         row.project_name         || "",
-    priority:             PRIORITIES.includes(row.priority) ? row.priority : "Medium",
+    priority:             row.priority              || "Medium",
     status:               row.status               || "pending",
     expect_complete_date: row.expect_complete_date || "",
     create_date:          row.create_date          || "",

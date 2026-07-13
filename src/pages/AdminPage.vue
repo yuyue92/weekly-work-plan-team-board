@@ -2,8 +2,8 @@
   <div class="container">
     <header class="app-header">
       <div class="app-hader-sub">
-        <h1 class="app-title">Member Management</h1>
-        <p class="app-subtitle">Manage team member assignments</p>
+        <h1 class="app-title">Admin Settings</h1>
+        <p class="app-subtitle">Manage teams, members, and board options</p>
       </div>
       <div class="header-right">
         <button class="btn btn-light btn-sm" @click="$router.push('/')">← Back to Board</button>
@@ -126,6 +126,104 @@
           </div>
         </div>
       </section>
+
+      <!-- Teams 管理 -->
+      <section class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <div class="section-header-row">
+            <div>
+              <h2 class="section-title">Teams</h2>
+              <p class="section-hint">Create, rename, or delete teams. A team must have no members before it can be deleted.</p>
+            </div>
+            <div class="header-inline-form">
+              <input
+                class="form-control form-control-sm"
+                placeholder="New team name"
+                v-model="newTeamName"
+                :disabled="creatingTeam"
+                @keyup.enter="createTeam"
+              />
+              <button class="btn btn-primary btn-sm" :disabled="creatingTeam || !newTeamName.trim()" @click="createTeam">
+                {{ creatingTeam ? "Creating..." : "+ Add Team" }}
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Team Name</th>
+                  <th>Members</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="team in allTeams" :key="team.id">
+                  <td>
+                    <input
+                      v-if="editingTeamId === team.id"
+                      class="form-control form-control-sm"
+                      v-model="editingTeamName"
+                      :disabled="savingTeamId === team.id"
+                      @keyup.enter="saveTeamName(team)"
+                      @keyup.esc="cancelEditTeam"
+                    />
+                    <span v-else>{{ team.name }}</span>
+                  </td>
+                  <td>{{ getTeamMembers(team.id).length }}</td>
+                  <td>{{ (team.created_at || "").slice(0, 10) }}</td>
+                  <td class="action-btnlist">
+                    <template v-if="editingTeamId === team.id">
+                      <button class="btn btn-primary btn-sm" :disabled="savingTeamId === team.id" @click="saveTeamName(team)">
+                        {{ savingTeamId === team.id ? "Saving..." : "Save" }}
+                      </button>
+                      <button class="btn btn-light btn-sm" :disabled="savingTeamId === team.id" @click="cancelEditTeam">Cancel</button>
+                    </template>
+                    <template v-else>
+                      <button class="btn btn-light btn-sm" @click="startEditTeam(team)">Rename</button>
+                      <button
+                        class="btn btn-outline-danger btn-sm"
+                        :disabled="deletingTeamId === team.id"
+                        @click="deleteTeam(team)"
+                      >{{ deletingTeamId === team.id ? "Deleting..." : "Delete" }}</button>
+                    </template>
+                  </td>
+                </tr>
+                <tr v-if="!allTeams.length">
+                  <td colspan="4" style="text-align:center;color:#94a3b8;padding:18px;">No teams yet</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Project / Priority / 工时选项：统一用 list_options 表 -->
+      <ListOptionsManager
+        list-type="project"
+        title="Projects"
+        hint="Options shown in the Work Item editor's Project dropdown."
+        placeholder="New project name"
+        usage-column="project_name"
+      />
+      <ListOptionsManager
+        list-type="priority"
+        title="Priority"
+        hint="Options shown in the Work Item editor's Priority dropdown."
+        placeholder="New priority name"
+        usage-column="priority"
+      />
+      <ListOptionsManager
+        list-type="hour"
+        title="Hour Options"
+        hint="Options shown in each day's hour dropdown (Mon–Fri) in the Work Item editor."
+        placeholder="e.g. 0.5"
+        input-type="number"
+      />
+
     </template>
 
     <!-- Toast -->
@@ -138,6 +236,7 @@ import { ref, reactive, onMounted } from "vue";
 import { supabase } from "../lib/supabase.js";
 import { useAuth } from "../composables/useAuth.js";
 import ToastMessage from "../components/ToastMessage.vue";
+import ListOptionsManager from "../components/ListOptionsManager.vue";
 
 const { currentUser } = useAuth();
 
@@ -149,6 +248,14 @@ const teamUsers    = ref([]);   // public.team_users 全部 { team_id, user_id }
 const togglingUserId = ref("");
 // 每个用户待分配的 team 选择（user_id -> team_id）
 const assignTarget = reactive({});
+
+// Team 增删改
+const newTeamName    = ref("");
+const creatingTeam   = ref(false);
+const editingTeamId  = ref("");
+const editingTeamName = ref("");
+const savingTeamId   = ref("");
+const deletingTeamId = ref("");
 
 const toastMsg     = ref("");
 const toastVisible = ref(false);
@@ -223,6 +330,101 @@ async function removeMember(userId, teamId) {
   if (error) { showToast("Operation failed:" + error.message); return; }
   await loadAll();
   showToast("已移除");
+}
+
+// ── 新增 Team ─────────────────────────────────────────
+async function createTeam() {
+  const name = newTeamName.value.trim();
+  if (!name) return;
+  if (allTeams.value.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+    showToast("A team with this name already exists");
+    return;
+  }
+
+  creatingTeam.value = true;
+  try {
+    const { error } = await supabase.from("teams").insert({ name });
+    if (error) throw error;
+    newTeamName.value = "";
+    await loadAll();
+    showToast("Team created");
+  } catch (err) {
+    showToast("Create failed: " + (err.message || String(err)));
+  } finally {
+    creatingTeam.value = false;
+  }
+}
+
+// ── 改名 Team ─────────────────────────────────────────
+function startEditTeam(team) {
+  editingTeamId.value   = team.id;
+  editingTeamName.value = team.name;
+}
+
+function cancelEditTeam() {
+  editingTeamId.value   = "";
+  editingTeamName.value = "";
+}
+
+async function saveTeamName(team) {
+  const name = editingTeamName.value.trim();
+  if (!name) { showToast("Team name can't be empty"); return; }
+  if (name === team.name) { cancelEditTeam(); return; }
+  if (allTeams.value.some(t => t.id !== team.id && t.name.toLowerCase() === name.toLowerCase())) {
+    showToast("A team with this name already exists");
+    return;
+  }
+
+  savingTeamId.value = team.id;
+  try {
+    const { error } = await supabase.from("teams").update({ name }).eq("id", team.id);
+    if (error) throw error;
+    cancelEditTeam();
+    await loadAll();
+    showToast("Team renamed");
+  } catch (err) {
+    showToast("Rename failed: " + (err.message || String(err)));
+  } finally {
+    savingTeamId.value = "";
+  }
+}
+
+// ── 删除 Team ─────────────────────────────────────────
+// 前端先挡住"还有成员"的 team；再查一下这个 team 名下有没有历史 work_items，
+// 有的话强提示一次，避免管理员在不知情的情况下删掉一整批工作记录。
+async function deleteTeam(team) {
+  if (getTeamMembers(team.id).length > 0) {
+    showToast("This team still has members. Remove them all before deleting the team.");
+    return;
+  }
+
+  const { count, error: countErr } = await supabase
+    .from("work_items")
+    .select("id", { count: "exact", head: true })
+    .eq("team_id", team.id);
+  if (countErr) { showToast("Failed to check team data: " + countErr.message); return; }
+
+  const confirmText = count
+    ? `Team "${team.name}" still has ${count} historical Work Item(s). Deleting the team may also delete this data (depending on database constraints). Continue?`
+    : `Delete team "${team.name}"? This cannot be undone.`;
+  if (!confirm(confirmText)) return;
+
+  deletingTeamId.value = team.id;
+  try {
+    const { error } = await supabase.from("teams").delete().eq("id", team.id);
+    if (error) throw error;
+    await loadAll();
+    showToast("Team deleted");
+  } catch (err) {
+    const isFkViolation = /foreign key|violates/i.test(err.message || "");
+    showToast(
+      isFkViolation
+        ? "This team still has related data (e.g. work items) preventing deletion."
+        : "Delete failed: " + (err.message || String(err))
+    );
+  } finally {
+    deletingTeamId.value = "";
+  }
 }
 
 // ── 禁用账号（软删除）：清空该用户 work_items（连带 tasks 级联删除）+ team_users，

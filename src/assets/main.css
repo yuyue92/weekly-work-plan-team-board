@@ -372,6 +372,26 @@
 
     .table-responsive { width: 100%; overflow-x: auto; }
 
+    .section-header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .header-inline-form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .header-inline-form .form-control-sm { width: 200px; }
+
+    table .action-btnlist {
+      display: flex; gap: 10px;
+    }
+
     table.board-table {
       width: 100%;
       border-collapse: separate;
