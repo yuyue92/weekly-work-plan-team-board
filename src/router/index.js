@@ -9,6 +9,12 @@ const routes = [
     meta:      { requiresAuth: false }
   },
   {
+    path:      "/reset-password",
+    name:      "ResetPassword",
+    component: () => import("../pages/LoginPage.vue"),
+    meta:      { requiresAuth: false }
+  },
+  {
     path:      "/",
     name:      "Board",
     component: () => import("../pages/BoardPage.vue"),

@@ -185,6 +185,20 @@ function unbindActivityListeners() {
   activityListenersBound = false;
 }
 
+// 判断当前 URL 是不是"重设密码"这条链路（Supabase 发的重置邮件会带 recovery 相关的 query/hash 参数）
+function isPasswordRecoveryUrl() {
+  if (typeof window === "undefined") return false;
+  const pathname = window.location.pathname.replace(/\/+$/, "");
+  const search = window.location.search || "";
+  const hash = window.location.hash || "";
+  return pathname === "/reset-password" || search.includes("type=recovery") || hash.includes("type=recovery");
+}
+
+function getPasswordResetRedirectUrl() {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/reset-password`;
+}
+
 // ── 登出 ─────────────────────────────────────────
 async function signOut() {
   if (signingOut) return;
@@ -336,6 +350,28 @@ export function useAuth() {
     return { data, error };
   }
 
+  // ── 发送重设密码邮件 ────────────────────────────
+  async function requestPasswordReset(email) {
+    const options = {};
+    const redirectTo = getPasswordResetRedirectUrl();
+    if (redirectTo) options.redirectTo = redirectTo;
+
+    const { data, error } = await supabase.auth.resetPasswordForEmail(
+      String(email || "").trim().toLowerCase(),
+      options
+    );
+    if (error) return { error };
+    return { data };
+  }
+
+  // ── 用户点开重置密码邮件里的链接后，设置新密码 ──────
+  // 调用前需要处于 PASSWORD_RECOVERY 建立的临时 session 中（由 onAuthStateChange 自动处理好）
+  async function updatePassword(password) {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) return { error };
+    return { data };
+  }
+
   // "即将过期"提醒里点【继续使用】调用这个：等价于产生一次新的用户操作，重新计时
   function continueSession() {
     refreshActivity();
@@ -356,6 +392,9 @@ export function useAuth() {
     signIn,
     signOut,
     fetchProfile,
-    continueSession
+    continueSession,
+    requestPasswordReset,
+    updatePassword,
+    isPasswordRecoveryUrl
   };
 }
