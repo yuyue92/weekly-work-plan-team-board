@@ -1291,3 +1291,18 @@
     .loading-fade-enter-from, .loading-fade-leave-to { opacity: 0; }
 
     .body-scroll-locked { overflow: hidden;}
+
+    .session-warning-mask {
+      position: fixed; inset: 0; z-index: 2000;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(15, 23, 42, 0.55);
+    }
+    .session-warning-card {
+      width: min(360px, 90vw);
+      background: #fff; border-radius: 16px; padding: 24px;
+      text-align: center; box-shadow: 0 24px 60px rgba(15,23,42,0.35);
+    }
+    .session-warning-icon { font-size: 32px; margin-bottom: 8px; }
+    .session-warning-title { font-weight: 700; font-size: 16px; margin-bottom: 8px; color: #102a43; }
+    .session-warning-desc { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+    .session-warning-actions { display: flex; gap: 10px; justify-content: center; }
