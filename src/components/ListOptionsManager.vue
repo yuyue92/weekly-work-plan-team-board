@@ -23,8 +23,8 @@
 
       <div v-if="loading" class="text-muted" style="padding:8px 0;">Loading...</div>
 
-      <table v-else class="admin-table">
-        <thead><tr><th>Value</th><th>Actions</th></tr></thead>
+      <table v-else class="admin-table options-table">
+        <thead><tr><th class="col-value">Value</th><th class="col-actions">Actions</th></tr></thead>
         <tbody>
           <tr v-for="option in items" :key="option.id">
             <td>
@@ -39,7 +39,7 @@
               />
               <span v-else>{{ option.name }}</span>
             </td>
-            <td class="action-btnlist">
+            <td class="action-btnlist col-actions">
               <template v-if="editingId === option.id">
                 <button class="btn btn-primary btn-sm" :disabled="savingId === option.id" @click="saveRename(option)">
                   {{ savingId === option.id ? "Saving..." : "Save" }}
@@ -65,6 +65,23 @@
     </div>
   </section>
 </template>
+
+<style scoped>
+/* Actions 列固定 160px 靠右，Value 列弹性占满剩余空间 */
+.options-table {
+  table-layout: fixed;
+}
+.options-table .col-value {
+  width: auto;
+}
+.options-table .col-actions {
+  width: 160px;
+  text-align: center;
+}
+.options-table td.action-btnlist {
+  justify-content: flex-end;
+}
+</style>
 
 <script setup>
 import { ref, onMounted } from "vue";

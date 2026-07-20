@@ -24,24 +24,24 @@
                 <tr>
                   <th>Display Name</th>
                   <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
+                  <th class="col-width-100">Role</th>
+                  <th class="col-width-100">Status</th>
                   <th>Team</th>
                   <th>Actions</th>
-                  <th>Danger Zone</th>
+                  <th class="col-actions">Danger Zone</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="user in allProfiles" :key="user.id">
                   <td>{{ user.display_name }}</td>
                   <td>{{ user.email }}</td>
-                  <td>
+                  <td class="col-width-100">
                     <span class="badge badge-role" :class="user.role === 'admin' ? 'badge-admin' : 'badge-staff'">
                       {{ user.role === 'admin' ? 'Admin' : 'Staff' }}
                     </span>
                   </td>
-                  <td>
-                    <span class="badge" :class="user.is_disabled ? 'badge-staff' : 'badge-admin'">
+                  <td class="col-width-100">
+                    <span class="badge" :class="user.is_disabled ? 'badge-is_disabled' : 'badge-is_enabled'">
                       {{ user.is_disabled ? 'Disabled' : 'Active' }}
                     </span>
                   </td>
@@ -156,7 +156,7 @@
                   <th>Team Name</th>
                   <th>Members</th>
                   <th>Created</th>
-                  <th>Actions</th>
+                  <th class="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -489,3 +489,13 @@ async function enableUser(user) {
 
 onMounted(loadAll);
 </script>
+<style scoped>
+.admin-table .col-actions {
+  width: 160px;
+  text-align: center;
+}
+.admin-table .col-width-100 {
+  width: 100px;
+  text-align: center;
+}
+</style>
