@@ -43,7 +43,7 @@
         @team-change="onTeamChange"
         @year-change="onYearChange"
         @week-change="onWeekChange"
-        @export="exportJson"
+        @export-excel="exportExcel"
         @clear-week="clearCurrentWeek"
         @import-owner-change="onImportOwnerChange"
         @import-source-year-change="onImportSourceYearChange"
@@ -133,7 +133,7 @@ const {
   onImportSourceYearChange,
   onImportSourceWeekChange,
   copySelectedMemberWeek,
-  exportJson
+  exportExcel
 } = useBoardStore();
 
 async function doSignOut() {

@@ -61,7 +61,7 @@
         <div class="form-group actions-group">
           <label>&nbsp;</label>
           <div class="actions">
-            <button class="btn btn-outline-primary" type="button" @click="$emit('export')">Export JSON</button>
+            <button class="btn btn-outline-primary" type="button" @click="$emit('export-excel')">Export Excel</button>
             <button
               v-if="isAdmin"
               class="btn btn-outline-danger"
@@ -169,7 +169,7 @@ const props = defineProps({
   isAdmin:          { type: Boolean, default: false }
 });
 
-const emit = defineEmits(["team-change", "year-change", "week-change", "export", "clear-week", "import-owner-change","import-source-year-change","import-source-week-change","copy-member-week"]);
+const emit = defineEmits(["team-change", "year-change", "week-change", "export-excel", "clear-week", "import-owner-change","import-source-year-change","import-source-week-change","copy-member-week"]);
 
 const selectedWeekIndex = computed(() =>
   props.weekOptions.findIndex(week => week.key === props.state.weekKey)

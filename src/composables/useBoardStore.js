@@ -1,8 +1,9 @@
 import { reactive, ref, computed } from "vue";
+import * as XLSX from "xlsx";
 import { supabase } from "../lib/supabase.js";
-import { STATUS_KEYS, STATUS_LABELS } from "../constants/index.js";
+import { STATUS_KEYS, STATUS_LABELS, HOUR_KEYS  } from "../constants/index.js";
 import {
-  buildWorkWeeks, getDefaultWeekKey, normalizeYear, formatTimestampForFile,
+  buildWorkWeeks, getDefaultWeekKey, normalizeYear,formatTimestampForFile,
   addDays, parseDate, formatDate
 } from "../utils/date.js";
 import {
@@ -645,28 +646,74 @@ export function useBoardStore() {
     }
   }
 
-  // ── JSON 导出（备份）─────────────────────────────
-  function exportJson() {
-    const exportData = {
-      version:     4,
-      app:         "Weekly Work Plan Team Board",
-      exportedAt:  new Date().toISOString(),
-      team:        state.teamName,
-      year:        state.year,
-      weekKey:     state.weekKey,
-      boardData:   boardData.value,
-      members:     membersData.value
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json;charset=utf-8" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `weekly_board_${formatTimestampForFile(new Date())}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    showToast("JSON exported");
+
+  // ── Excel 导出：每个成员一个 sheet，行 = 天 × item 的笛卡儿积（过滤掉当天工时为 0 的组合）──
+  // Excel sheet 名称限制：<=31 字符，且不能包含 : \ / ? * [ ]
+  function sanitizeSheetName(name) {
+    const cleaned = String(name || "Member").replace(/[:\\/?*[\]]/g, " ").trim();
+    return (cleaned || "Member").slice(0, 31);
+  }
+
+  function exportExcel() {
+    const week = weekOptions.value.find(w => w.key === state.weekKey);
+    const days = week?.days || [];
+    if (!days.length) {
+      showToast("Current week has no date range to export.");
+      return;
+    }
+
+    const headers = ["Date", "Project", "Item Name", "Ref ID", "Tasks", "Description", "Priority", "Hours"];
+    const wb = XLSX.utils.book_new();
+    const usedSheetNames = new Set();
+
+    membersData.value.forEach(member => {
+      const items = STATUS_KEYS.flatMap(status => getMemberItems(member.userId, status));
+      const rows = [];
+
+      // 天在外层、item 在内层遍历，对应"day * item"笛卡儿积；
+      // 某个 item 在某天工时为 0，则这一天这一行直接跳过，不写入。
+      days.forEach((date, dayIdx) => {
+        const hourKey = HOUR_KEYS[dayIdx];
+        items.forEach(item => {
+          const hoursValue = Number(item.hours?.[hourKey]) || 0;
+          if (hoursValue <= 0) return;
+
+          const tasksStr = (item.tasks || [])
+            .map(t => t.task_name)
+            .filter(Boolean)
+            .join(", ");
+          const descriptionStr = (item.tasks || [])
+            .map(t => t.description)
+            .filter(Boolean)
+            .join(", ");
+
+          rows.push([
+            date,
+            item.project_name || "",
+            item.work_item || "",
+            item.ref_id || "",
+            tasksStr,
+            descriptionStr,
+            item.priority || "",
+            hoursValue
+          ]);
+        });
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+      let sheetName = sanitizeSheetName(member.displayName);
+      let suffix = 2;
+      while (usedSheetNames.has(sheetName)) {
+        sheetName = sanitizeSheetName(`${member.displayName}_${suffix++}`);
+      }
+      usedSheetNames.add(sheetName);
+
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    XLSX.writeFile(wb, `weekly_board_${formatTimestampForFile(new Date())}.xlsx`);
+    showToast("Excel exported");
   }
 
   // ── computed ──────────────────────────────────────
@@ -720,7 +767,7 @@ export function useBoardStore() {
     clearCurrentWeek,
     onImportOwnerChange, onImportSourceYearChange, onImportSourceWeekChange,
     copySelectedMemberWeek,
-    exportJson,
+    exportExcel,
     showToast
   };
 }
