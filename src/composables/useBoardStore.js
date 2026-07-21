@@ -31,6 +31,7 @@ const boardLoading  = ref(false);
 const noTeamMessage = ref("");
 
 const toastMessage   = ref("");
+const toastType      = ref("info"); // success | error | info
 const toastVisible   = ref(false);
 let toastTimer       = null;
 
@@ -60,12 +61,15 @@ const importSaving      = ref(false);
 
 export function useBoardStore() {
 
+  const TOAST_DEFAULT_DURATION = { success: 1800, error: 3200, info: 1800 };
   // ── 工具 ──────────────────────────────────────────
-  function showToast(msg, duration = 1800) {
+  function showToast(msg, type = "info", duration = 1800) {
     toastMessage.value = msg;
+    toastType.value    = type;
     toastVisible.value = true;
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toastVisible.value = false; }, duration);
+    const resolvedDuration = duration ?? TOAST_DEFAULT_DURATION[type] ?? 1800;
+    toastTimer = setTimeout(() => { toastVisible.value = false; }, resolvedDuration);
   }
 
   function findWeekByStartDate(startDate, preferredYear) {
@@ -170,7 +174,7 @@ export function useBoardStore() {
       listOptions.value = data || [];
     } catch (error) {
       console.error("Failed to load settings", error);
-      showToast("Failed to load Project/Priority/Hour options. Some dropdowns may be empty.", 3000);
+      showToast("Failed to load Project/Priority/Hour options. Some dropdowns may be empty.", "error", 3000);
     } finally {
       settingsLoading.value = false;
     }
@@ -246,7 +250,7 @@ export function useBoardStore() {
     try {
       const { data, error } = await supabase
         .from("team_users")
-        .select("user_id, sort_order, profiles(id, display_name, role)")
+        .select("user_id, sort_order, profiles(id, staff_id, display_name, role)")
         .eq("team_id", teamId)
         .order("sort_order");
 
@@ -256,6 +260,7 @@ export function useBoardStore() {
         .filter(row => row.profiles)
         .map(row => ({
           userId:      row.profiles.id,
+          staffId:     row.profiles.staff_id || "",
           displayName: row.profiles.display_name,
           role:        row.profiles.role,
           sortOrder:   row.sort_order
@@ -272,7 +277,7 @@ export function useBoardStore() {
       await loadBoard();
     } catch (error) {
       console.error("Failed to switch team", error);
-      showToast("Failed to switch team: " + (error.message || String(error)));
+      showToast("Failed to switch team: " + (error.message || String(error)), "error");
       boardLoading.value = false;
     }
   }
@@ -308,7 +313,7 @@ export function useBoardStore() {
       p_user_b:  previous.userId
     });
     if (error) {
-      showToast("Sort failed: " + error.message);
+      showToast("Sort failed: " + error.message, "error");
       return;
     }
 
@@ -491,10 +496,10 @@ export function useBoardStore() {
       }
 
       await loadBoard();
-      showToast("Saved");
+      showToast("Saved", "success");
       closeMemberModal();
     } catch (err) {
-      showToast("Save failed: " + (err.message || String(err)), 3000);
+      showToast("Save failed: " + (err.message || String(err)), "error", 3000);
     } finally {
       memberModalSaving.value = false;
     }
@@ -513,13 +518,13 @@ export function useBoardStore() {
         .eq("id", itemId);
       if (error) throw error;
       await loadBoard();
-      showToast("Work Item moved", 3000);
+      showToast("Work Item moved", "success", 3000);
     } catch (err) {
       const isRlsDenied = /row-level security/i.test(err.message || "");
       showToast(
         isRlsDenied
           ? "You don't have permission to move this Work Item to another member. Please contact an administrator to reassign it."
-          : "Move failed: " + (err.message || String(err)),
+          : "Move failed: " + (err.message || String(err)), "error",
         3000
       );
       if (isRlsDenied) await loadBoard();
@@ -538,7 +543,7 @@ export function useBoardStore() {
     const matched = findWeekByStartDate(targetStartDate, state.year);
 
     if (!matched) {
-      showToast(direction < 0 ? "No earlier week available." : "No later week available.");
+      showToast(direction < 0 ? "No earlier week available." : "No later week available.", "info");
       return;
     }
 
@@ -561,7 +566,7 @@ export function useBoardStore() {
       if (error) throw error;
 
       const yearHint = matched.year !== state.year ? ` (${matched.year})` : "";
-      showToast(`Copied to ${matched.week.label}${yearHint}`, 2500);
+      showToast(`Copied to ${matched.week.label}${yearHint}`, "success", 2500);
 
       if (matched.year === state.year && matched.week.key === state.weekKey) {
         await loadBoard();
@@ -571,7 +576,7 @@ export function useBoardStore() {
       showToast(
         isRlsDenied
           ? "You don't have permission to copy this Work Item. Please contact an administrator."
-          : "Copy failed: " + (err.message || String(err)),
+          : "Copy failed: " + (err.message || String(err)), "error",
         3000
       );
     } finally {
@@ -589,9 +594,9 @@ export function useBoardStore() {
       .eq("team_id", state.teamId)
       .eq("year", state.year)
       .eq("week_key", state.weekKey);
-    if (error) { showToast("Clear failed: " + error.message); return; }
+    if (error) { showToast("Clear failed: " + error.message, "error"); return; }
     await loadBoard();
-    showToast("Current week cleared");
+    showToast("Current week cleared", "success");
   }
 
   // ── 按成员复制某一周到当前周（仅 admin）──────────
@@ -603,12 +608,12 @@ export function useBoardStore() {
     const targetWeek = weekOptions.value.find(item => item.key === state.weekKey);
 
     if (!member || !sourceWeek || !targetWeek) {
-      showToast("Please select a source week and a member to import.");
+      showToast("Please select a source week and a member to import.", "info");
       return;
     }
 
     if (Number(importState.sourceYear) === Number(state.year) && importState.sourceWeekKey === state.weekKey) {
-      showToast("The source week can't be the same as the current target week.");
+      showToast("The source week can't be the same as the current target week.", "info");
       return;
     }
 
@@ -638,9 +643,9 @@ export function useBoardStore() {
       if (error) throw error;
 
       await loadBoard();
-      showToast(`Imported ${Number(data?.copied_work_items || 0)} Work Item(s) for ${member.displayName}`);
+      showToast(`Imported ${Number(data?.copied_work_items || 0)} Work Item(s) for ${member.displayName}`, "success");
     } catch (err) {
-      showToast("Import failed: " + (err.message || String(err)));
+      showToast("Import failed: " + (err.message || String(err)), "error");
     } finally {
       importSaving.value = false;
     }
@@ -673,13 +678,13 @@ export function useBoardStore() {
     return Math.round(((px - 5) / 7) * 100) / 100;
   }
   // 设置Excel的列宽
-  const COLUMN_WIDTHS_PX = [80, 120, 140, 80, 80, 80, 80, 80];
+  const COLUMN_WIDTHS_PX = [80, 120, 160, 80, 160, 160, 80, 80];
 
   async function exportExcel() {
     const week = weekOptions.value.find(w => w.key === state.weekKey);
     const days = week?.days || [];
     if (!days.length) {
-      showToast("Current week has no date range to export.");
+      showToast("Current week has no date range to export.", "info");
       return;
     }
 
@@ -700,17 +705,20 @@ export function useBoardStore() {
       const ws = wb.addWorksheet(sheetName);
       ws.columns = COLUMN_WIDTHS_PX.map(px => ({ width: pxToExcelWidth(px) }));
 
-      // ── 第 1 行：Name / Team / Week（值单元格黄色背景，全部加边框）── 第 2 行留空
-      ws.getCell("A1").value = "Name";
-      ws.getCell("B1").value = member.displayName;
+      // ── 第 1 行：Staff ID / Name / Team / Week ── 第 2 行留空
+      ws.getCell("A1").value = "Staff ID";
+      ws.getCell("B1").value = member.staffId || "";
       ws.getCell("B1").fill  = EXCEL_YELLOW_FILL;
-      ws.getCell("C1").value = "Team";
-      ws.getCell("D1").value = state.teamName;
+      ws.getCell("C1").value = "Name";
+      ws.getCell("D1").value = member.displayName;
       ws.getCell("D1").fill  = EXCEL_YELLOW_FILL;
-      ws.getCell("E1").value = "Week";
-      ws.getCell("F1").value = week.weekNo;
+      ws.getCell("E1").value = "Team";
+      ws.getCell("F1").value = state.teamName;
       ws.getCell("F1").fill  = EXCEL_YELLOW_FILL;
-      ["A1", "B1", "C1", "D1", "E1", "F1"].forEach(ref => {
+      ws.getCell("G1").value = "Week";
+      ws.getCell("H1").value = week.weekNo;
+      ws.getCell("H1").fill  = EXCEL_YELLOW_FILL;
+      ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"].forEach(ref => {
         ws.getCell(ref).border = EXCEL_THIN_BORDER;
       });
 
@@ -790,7 +798,7 @@ export function useBoardStore() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    showToast("Excel exported");
+    showToast("Excel exported", "success");
   }
 
   // ── computed ──────────────────────────────────────
@@ -824,7 +832,7 @@ export function useBoardStore() {
     STATUS_KEYS, STATUS_LABELS,
     state, weekOptions, teamsData, currentMembers,
     boardData, boardLoading, noTeamMessage,
-    toastMessage, toastVisible,
+    toastMessage, toastType, toastVisible,
     settingsLoading, listOptions,
     hourOptions, projectNames, priorities, loadSettings,
     memberModalOpen, memberModalContext, memberModalDraft,

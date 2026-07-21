@@ -229,6 +229,7 @@ export function useAuth() {
   const currentUser = computed(() => ({
     id:           session.value?.user?.id || null,
     email:        session.value?.user?.email || "",
+    staffId:      profile.value?.staff_id || "",
     displayName:  profile.value?.display_name || "",
     role:         profile.value?.role || "staff"
   }));
@@ -325,14 +326,42 @@ export function useAuth() {
   }
 
   // ── 注册 ─────────────────────────────────────────
-  async function signUp(email, password, displayName) {
+  async function signUp(email, password, displayName, staffId) {
     if (!email.endsWith(ALLOWED_EMAIL_DOMAIN)) {
       return { error: { message: `Only ${ALLOWED_EMAIL_DOMAIN} email addresses are allowed to register` } };
     }
+    const normalizedStaffId = String(staffId || "")
+      .trim()
+      .toLowerCase();
+
+    if (!normalizedStaffId) {
+      return {
+        error: {
+          message: "Staff ID is required"
+        }
+      };
+    }
+
+    if (!/^[a-z0-9_-]+$/.test(normalizedStaffId)) {
+      return {
+        error: {
+          message: "Staff ID may only contain letters, numbers, hyphens and underscores"
+        }
+      };
+    }
+
+    if (normalizedStaffId.length > 50) {
+      return {
+        error: {
+          message: "Staff ID must not exceed 50 characters"
+        }
+      };
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName } }
+      options: { data: { display_name: displayName, staff_id: normalizedStaffId } }
     });
     return { data, error };
   }

@@ -917,22 +917,27 @@
 
     .toast {
       position: fixed;
+      top: 20px;
       right: 20px;
-      bottom: 20px;
       background: #0f172a;
       color: #fff;
       border-radius: 12px;
-      padding: 11px 14px;
+      padding: 11px 16px;
       box-shadow: var(--shadow);
       font-size: 14px;
+      max-width: 360px;
       opacity: 0;
-      transform: translateY(12px);
+      transform: translateX(40px);
       pointer-events: none;
-      transition: opacity 0.18s ease, transform 0.18s ease;
+      transition: opacity 0.45s ease, transform 0.45s ease;
       z-index: 1100;
     }
 
-    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.show { opacity: 1; transform: translateX(0); }
+
+    .toast.toast-success { background: #16a34a; }
+    .toast.toast-error   { background: #dc2626; }
+    .toast.toast-info    { background: #0f172a; }
 
     @media (max-width: 1200px) {
       .import-controls {
@@ -1172,6 +1177,13 @@
       vertical-align: middle;
     }
     .admin-table tr:last-child td { border-bottom: none; }
+    /* Admin 页 Project/Priority/Hour 三张固定尺寸卡片：从左往右排列，放不下自动换到下一行 */
+    .list-options-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
     .team-tags { display: flex; flex-wrap: wrap; gap: 4px; }
     .tag-remove {
       background: none;

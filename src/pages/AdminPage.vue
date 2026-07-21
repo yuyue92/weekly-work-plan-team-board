@@ -22,6 +22,7 @@
             <table class="admin-table">
               <thead>
                 <tr>
+                  <th>Staff ID</th>
                   <th>Display Name</th>
                   <th>Email</th>
                   <th class="col-width-100">Role</th>
@@ -33,6 +34,7 @@
               </thead>
               <tbody>
                 <tr v-for="user in allProfiles" :key="user.id">
+                  <td>{{ user.staff_id || "—" }}</td>
                   <td>{{ user.display_name }}</td>
                   <td>{{ user.email }}</td>
                   <td class="col-width-100">
@@ -99,7 +101,7 @@
                   </td>
                 </tr>
                 <tr v-if="!allProfiles.length">
-                  <td colspan="7" style="text-align:center;color:#94a3b8;padding:18px;">
+                  <td colspan="8" style="text-align:center;color:#94a3b8;padding:18px;">
                     No registered users
                   </td>
                 </tr>
@@ -202,32 +204,34 @@
       </section>
 
       <!-- Project / Priority / 工时选项：统一用 list_options 表 -->
-      <ListOptionsManager
-        list-type="project"
-        title="Projects"
-        hint="Options shown in the Work Item editor's Project dropdown."
-        placeholder="New project name"
-        usage-column="project_name"
-      />
-      <ListOptionsManager
-        list-type="priority"
-        title="Priority"
-        hint="Options shown in the Work Item editor's Priority dropdown."
-        placeholder="New priority name"
-        usage-column="priority"
-      />
-      <ListOptionsManager
-        list-type="hour"
-        title="Hour Options"
-        hint="Options shown in each day's hour dropdown (Mon–Fri) in the Work Item editor."
-        placeholder="e.g. 0.5"
-        input-type="number"
-      />
+      <div class="list-options-grid">
+        <ListOptionsManager
+          list-type="project"
+          title="Projects"
+          hint="Options shown in the Work Item editor's Project dropdown."
+          placeholder="New project name"
+          usage-column="project_name"
+        />
+        <ListOptionsManager
+          list-type="priority"
+          title="Priority"
+          hint="Options shown in the Work Item editor's Priority dropdown."
+          placeholder="New priority name"
+          usage-column="priority"
+        />
+        <ListOptionsManager
+          list-type="hour"
+          title="Hour Options"
+          hint="Options shown in each day's hour dropdown (Mon–Fri) in the Work Item editor."
+          placeholder="e.g. 0.5"
+          input-type="number"
+        />
+      </div>
 
     </template>
 
     <!-- Toast -->
-    <ToastMessage :message="toastMsg" :visible="toastVisible" />
+    <ToastMessage :message="toastMsg" :type="toastType" :visible="toastVisible" />
   </div>
 </template>
 
@@ -258,14 +262,16 @@ const savingTeamId   = ref("");
 const deletingTeamId = ref("");
 
 const toastMsg     = ref("");
+const toastType    = ref("info"); // success | error | info
 const toastVisible = ref(false);
 let toastTimer     = null;
 
-function showToast(msg) {
+function showToast(msg, type = "info") {
   toastMsg.value     = msg;
+  toastType.value    = type;
   toastVisible.value = true;
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toastVisible.value = false; }, 1800);
+  toastTimer = setTimeout(() => { toastVisible.value = false; }, type === "error" ? 3200 : 1800);
 }
 
 // ── 数据加载 ─────────────────────────────────────────
@@ -311,10 +317,10 @@ async function addMember(userId) {
   const { error } = await supabase
     .from("team_users")
     .insert({ team_id: teamId, user_id: userId });
-  if (error) { showToast("Operation failed:" + error.message); return; }
+  if (error) { showToast("Operation failed:" + error.message, "error"); return; }
   assignTarget[userId] = "";
   await loadAll();
-  showToast("Joined Team");
+  showToast("Joined Team", "success");
 }
 
 // ── 移除 Team ─────────────────────────────────────────
@@ -327,9 +333,9 @@ async function removeMember(userId, teamId) {
     .delete()
     .eq("team_id", teamId)
     .eq("user_id", userId);
-  if (error) { showToast("Operation failed:" + error.message); return; }
+  if (error) { showToast("Operation failed:" + error.message, "error"); return; }
   await loadAll();
-  showToast("已移除");
+  showToast("Removed!", "success");
 }
 
 // ── 新增 Team ─────────────────────────────────────────
@@ -337,7 +343,7 @@ async function createTeam() {
   const name = newTeamName.value.trim();
   if (!name) return;
   if (allTeams.value.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-    showToast("A team with this name already exists");
+    showToast("A team with this name already exists", "info");
     return;
   }
 
@@ -347,9 +353,9 @@ async function createTeam() {
     if (error) throw error;
     newTeamName.value = "";
     await loadAll();
-    showToast("Team created");
+    showToast("Team created", "success");
   } catch (err) {
-    showToast("Create failed: " + (err.message || String(err)));
+    showToast("Create failed: " + (err.message || String(err)), "error");
   } finally {
     creatingTeam.value = false;
   }
@@ -368,10 +374,10 @@ function cancelEditTeam() {
 
 async function saveTeamName(team) {
   const name = editingTeamName.value.trim();
-  if (!name) { showToast("Team name can't be empty"); return; }
+  if (!name) { showToast("Team name can't be empty", "info"); return; }
   if (name === team.name) { cancelEditTeam(); return; }
   if (allTeams.value.some(t => t.id !== team.id && t.name.toLowerCase() === name.toLowerCase())) {
-    showToast("A team with this name already exists");
+    showToast("A team with this name already exists", "info");
     return;
   }
 
@@ -381,9 +387,9 @@ async function saveTeamName(team) {
     if (error) throw error;
     cancelEditTeam();
     await loadAll();
-    showToast("Team renamed");
+    showToast("Team renamed", "success");
   } catch (err) {
-    showToast("Rename failed: " + (err.message || String(err)));
+    showToast("Rename failed: " + (err.message || String(err)), "error");
   } finally {
     savingTeamId.value = "";
   }
@@ -394,7 +400,7 @@ async function saveTeamName(team) {
 // 有的话强提示一次，避免管理员在不知情的情况下删掉一整批工作记录。
 async function deleteTeam(team) {
   if (getTeamMembers(team.id).length > 0) {
-    showToast("This team still has members. Remove them all before deleting the team.");
+    showToast("This team still has members. Remove them all before deleting the team.", "info");
     return;
   }
 
@@ -402,7 +408,7 @@ async function deleteTeam(team) {
     .from("work_items")
     .select("id", { count: "exact", head: true })
     .eq("team_id", team.id);
-  if (countErr) { showToast("Failed to check team data: " + countErr.message); return; }
+  if (countErr) { showToast("Failed to check team data: " + countErr.message, "error"); return; }
 
   const confirmText = count
     ? `Team "${team.name}" still has ${count} historical Work Item(s). Deleting the team may also delete this data (depending on database constraints). Continue?`
@@ -414,13 +420,13 @@ async function deleteTeam(team) {
     const { error } = await supabase.from("teams").delete().eq("id", team.id);
     if (error) throw error;
     await loadAll();
-    showToast("Team deleted");
+    showToast("Team deleted", "success");
   } catch (err) {
     const isFkViolation = /foreign key|violates/i.test(err.message || "");
     showToast(
       isFkViolation
         ? "This team still has related data (e.g. work items) preventing deletion."
-        : "Delete failed: " + (err.message || String(err))
+        : "Delete failed: " + (err.message || String(err)), "error"
     );
   } finally {
     deletingTeamId.value = "";
@@ -457,7 +463,7 @@ async function disableUser(user) {
     }
 
     await loadAll();
-    showToast("账号已禁用");
+    showToast("账号已禁用", "success");
   } catch (err) {
     alert("Operation failed:" + (err.message || String(err)));
   } finally {
@@ -479,7 +485,7 @@ async function enableUser(user) {
       throw new Error("更新失败：没有权限修改该用户资料，请检查 profiles 表的 RLS UPDATE 策略");
     }
     await loadAll();
-    showToast("账号已启用");
+    showToast("账号已启用", "success");
   } catch (err) {
     alert("Operation failed:" + (err.message || String(err)));
   } finally {

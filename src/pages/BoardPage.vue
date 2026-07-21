@@ -93,7 +93,7 @@
     @move-item="moveDraftItem"
   />
 
-  <ToastMessage :message="toastMessage" :visible="toastVisible" />
+  <ToastMessage :message="toastMessage" :type="toastType" :visible="toastVisible" />
 </template>
 
 <script setup>
@@ -115,7 +115,7 @@ const { currentUser, isAdmin, signOut } = useAuth();
 const {
   state, weekOptions, teamsData, currentMembers,
   boardLoading, noTeamMessage,
-  toastMessage, toastVisible,
+  toastMessage, toastType, toastVisible,
   projectNames, priorities, hourOptions,
   memberModalOpen, memberModalContext, memberModalDraft, memberModalSaveHint, memberModalSaving,
   importState, importWeekOptions, importSaving,

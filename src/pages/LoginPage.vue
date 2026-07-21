@@ -106,6 +106,18 @@
         <!-- 注册表单 -->
         <div v-if="mode === 'register'">
           <div class="form-group">
+            <label>Staff ID</label>
+            <input
+              class="form-control"
+              type="text"
+              v-model="staffId"
+              maxlength="50"
+              autocomplete="off"
+              placeholder="e.g. xcs00033"
+              @keyup.enter="doRegister"
+            />
+          </div>
+          <div class="form-group">
             <label>Display Name (shown on the board)</label>
             <input class="form-control" type="text" v-model="displayName" placeholder="e.g. Zhang San" />
           </div>
@@ -169,6 +181,7 @@ const mode          = ref("login");
 const email          = ref("");
 const password       = ref("");
 const confirmPassword = ref("");
+const staffId        = ref("");
 const displayName    = ref("");
 const errorMsg       = ref("");
 const successMsg     = ref("");
@@ -188,6 +201,18 @@ function clearMsg() {
 
 function friendlyAuthError(error) {
   const message = String(error?.message || "").toLowerCase();
+  if (message.includes("uq_profiles_staff_id") ||message.includes("duplicate key") ||message.includes("staff id already exists")) {
+    return "This Staff ID is already registered.";
+  }
+
+  if (message.includes("staff id is required")) {
+    return "Please enter your Staff ID.";
+  }
+
+  if (message.includes("staff id may only contain") ||message.includes("profiles_staff_id_format_check")) {
+    return "Staff ID may only contain letters, numbers, hyphens and underscores.";
+  }
+
   if (message.includes("invalid login credentials")) return "Incorrect email or password, or this email hasn't registered yet.";
   if (message.includes("email not confirmed")) return "This email hasn't been verified yet. Please check your inbox for the verification link.";
   if (message.includes("already registered")) return "This email is already registered. Please log in instead.";
@@ -212,13 +237,30 @@ async function doLogin() {
 }
 
 async function doRegister() {
+  const normalizedStaffId = staffId.value.trim().toLowerCase();
+
+  if (!normalizedStaffId) {
+    errorMsg.value = "Please enter your Staff ID";
+    return;
+  }
+
+  if (!/^[a-z0-9_-]+$/.test(normalizedStaffId)) {
+    errorMsg.value = "Staff ID may only contain letters, numbers, hyphens and underscores";
+    return;
+  }
+
+  if (normalizedStaffId.length > 50) {
+    errorMsg.value = "Staff ID must not exceed 50 characters";
+    return;
+  }
+
   if (!displayName.value.trim()) { errorMsg.value = "Please enter a display name"; return; }
   if (!email.value || !password.value) { errorMsg.value = "Please enter your email and password"; return; }
   if (password.value.length < 6) { errorMsg.value = "Password must be at least 6 characters"; return; }
   submitting.value = true;
   clearMsg();
   const normalizedEmail = email.value.trim().toLowerCase();
-  const { data, error } = await signUp(normalizedEmail, password.value, displayName.value.trim());
+  const { data, error } = await signUp(normalizedEmail, password.value, displayName.value.trim(), normalizedStaffId);
   submitting.value = false;
   if (error) { errorMsg.value = friendlyAuthError(error); return; }
 
@@ -232,6 +274,7 @@ async function doRegister() {
   }
   localStorage.setItem(REMEMBER_EMAIL_KEY, normalizedEmail);
   successMsg.value = "Sign-up successful! Please check your email to verify your account, then log in from the [Log In] tab.";
+  staffId.value = "";
   password.value = "";
   mode.value = "login";
 }
