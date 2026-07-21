@@ -587,6 +587,10 @@
       word-break: break-word;
     }
 
+    .item-title .work_item-title {
+      font-weight: 500;
+    }
+
     .item-meta {
       display: flex;
       flex-wrap: wrap;

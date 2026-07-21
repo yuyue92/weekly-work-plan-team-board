@@ -9,7 +9,7 @@
     @mouseleave="hidePreview"
   >
     <div class="item-top">
-      <div class="item-title">{{ item.work_item || "Untitled Work Item" }}</div>
+      <div class="item-title"><span class="project-title">{{ item.project_name || "" }} - </span><span class="work_item-title">{{ item.work_item || "" }}</span></div>
       <div v-if="canEdit" class="item-actions">
         <button
           class="btn btn-light btn-sm icon-btn"

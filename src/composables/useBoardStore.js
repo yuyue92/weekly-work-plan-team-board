@@ -1,7 +1,7 @@
 import { reactive, ref, computed } from "vue";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { supabase } from "../lib/supabase.js";
-import { STATUS_KEYS, STATUS_LABELS, HOUR_KEYS  } from "../constants/index.js";
+import { STATUS_KEYS, STATUS_LABELS, HOUR_KEYS, WEEKDAY_LABELS } from "../constants/index.js";
 import {
   buildWorkWeeks, getDefaultWeekKey, normalizeYear,formatTimestampForFile,
   addDays, parseDate, formatDate
@@ -654,7 +654,28 @@ export function useBoardStore() {
     return (cleaned || "Member").slice(0, 31);
   }
 
-  function exportExcel() {
+  const EXCEL_YELLOW_FILL   = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+  const EXCEL_GREEN_FILL    = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92D050" } }; // 刚好 8 小时
+  const EXCEL_RED_FILL      = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF6B6B" } }; // 超过 8 小时
+  const EXCEL_BLUEGRAY_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FF8EA9C4" } }; // 不足 8 小时
+  const EXCEL_THIN_BORDER   = {
+    top:    { style: "thin" },
+    left:   { style: "thin" },
+    bottom: { style: "thin" },
+    right:  { style: "thin" }
+  };
+
+  // 明细表整体从第 10 行开始，之前 1~9 行留给 Name/Team/Week 头信息 + 每日工时小表格
+  const DETAIL_TABLE_START_ROW = 10;
+  // Excel 列宽单位是"字符数"而不是像素，这里按 Calibri 11 的通用换算公式做近似转换
+  // （实际显示宽度会因字体/DPI 略有出入，属于近似值）
+  function pxToExcelWidth(px) {
+    return Math.round(((px - 5) / 7) * 100) / 100;
+  }
+  // 设置Excel的列宽
+  const COLUMN_WIDTHS_PX = [80, 120, 140, 80, 80, 80, 80, 80];
+
+  async function exportExcel() {
     const week = weekOptions.value.find(w => w.key === state.weekKey);
     const days = week?.days || [];
     if (!days.length) {
@@ -663,12 +684,72 @@ export function useBoardStore() {
     }
 
     const headers = ["Date", "Project", "Item Name", "Ref ID", "Tasks", "Description", "Priority", "Hours"];
-    const wb = XLSX.utils.book_new();
+    const wb = new ExcelJS.Workbook();
     const usedSheetNames = new Set();
 
     membersData.value.forEach(member => {
       const items = STATUS_KEYS.flatMap(status => getMemberItems(member.userId, status));
-      const rows = [];
+      
+      let sheetName = sanitizeSheetName(member.displayName);
+      let suffix = 2;
+      while (usedSheetNames.has(sheetName)) {
+        sheetName = sanitizeSheetName(`${member.displayName}_${suffix++}`);
+      }
+      usedSheetNames.add(sheetName);
+
+      const ws = wb.addWorksheet(sheetName);
+      ws.columns = COLUMN_WIDTHS_PX.map(px => ({ width: pxToExcelWidth(px) }));
+
+      // ── 第 1 行：Name / Team / Week（值单元格黄色背景，全部加边框）── 第 2 行留空
+      ws.getCell("A1").value = "Name";
+      ws.getCell("B1").value = member.displayName;
+      ws.getCell("B1").fill  = EXCEL_YELLOW_FILL;
+      ws.getCell("C1").value = "Team";
+      ws.getCell("D1").value = state.teamName;
+      ws.getCell("D1").fill  = EXCEL_YELLOW_FILL;
+      ws.getCell("E1").value = "Week";
+      ws.getCell("F1").value = week.weekNo;
+      ws.getCell("F1").fill  = EXCEL_YELLOW_FILL;
+      ["A1", "B1", "C1", "D1", "E1", "F1"].forEach(ref => {
+        ws.getCell(ref).border = EXCEL_THIN_BORDER;
+      });
+
+      // ── 第 3~8 行：Mon~Fri 每日工时小表格（B:D 列，带边框）──────
+      ws.getCell("B3").value = "Day";
+      ws.getCell("C3").value = "Date";
+      ws.getCell("D3").value = "Hours";
+
+      days.forEach((date, idx) => {
+        const rowNum     = 4 + idx;
+        const hourKey     = HOUR_KEYS[idx];
+        const hoursTotal  = items.reduce((sum, i) => sum + (Number(i.hours?.[hourKey]) || 0), 0);
+
+        ws.getCell(`B${rowNum}`).value = WEEKDAY_LABELS[idx];
+        ws.getCell(`C${rowNum}`).value = date;
+
+        const hoursCell = ws.getCell(`D${rowNum}`);
+        hoursCell.value = hoursTotal;
+        if (hoursTotal === 8)    hoursCell.fill = EXCEL_GREEN_FILL;
+        else if (hoursTotal > 8) hoursCell.fill = EXCEL_RED_FILL;
+        else                     hoursCell.fill = EXCEL_BLUEGRAY_FILL;
+      });
+
+      for (let rowNum = 3; rowNum <= 8; rowNum++) {
+        ["B", "C", "D"].forEach(col => {
+          ws.getCell(`${col}${rowNum}`).border = EXCEL_THIN_BORDER;
+        });
+      }
+
+      // ── 第 10 行起：明细表头（黄色背景）+ 数据（天 × item 笛卡儿积，过滤掉 0 工时）──
+      const headerRow = ws.getRow(DETAIL_TABLE_START_ROW);
+      headers.forEach((label, idx) => {
+        const cell = headerRow.getCell(idx + 1);
+        cell.value = label;
+        cell.fill  = EXCEL_YELLOW_FILL;
+        cell.border = EXCEL_THIN_BORDER
+      });
+
+      let rowCursor = DETAIL_TABLE_START_ROW + 1;
 
       // 天在外层、item 在内层遍历，对应"day * item"笛卡儿积；
       // 某个 item 在某天工时为 0，则这一天这一行直接跳过，不写入。
@@ -687,32 +768,28 @@ export function useBoardStore() {
             .filter(Boolean)
             .join(", ");
 
-          rows.push([
-            date,
-            item.project_name || "",
-            item.work_item || "",
-            item.ref_id || "",
-            tasksStr,
-            descriptionStr,
-            item.priority || "",
-            hoursValue
-          ]);
+          const dataRow = ws.getRow(rowCursor);
+          dataRow.values = [
+            date, item.project_name || "", item.work_item || "", item.ref_id || "",
+            tasksStr, descriptionStr, item.priority || "", hoursValue
+          ];
+          for (let col = 1; col <= headers.length; col++) {
+            dataRow.getCell(col).border = EXCEL_THIN_BORDER;
+          }
+          rowCursor++;
         });
       });
-
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-
-      let sheetName = sanitizeSheetName(member.displayName);
-      let suffix = 2;
-      while (usedSheetNames.has(sheetName)) {
-        sheetName = sanitizeSheetName(`${member.displayName}_${suffix++}`);
-      }
-      usedSheetNames.add(sheetName);
-
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
     });
-
-    XLSX.writeFile(wb, `weekly_board_${formatTimestampForFile(new Date())}.xlsx`);
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob   = new Blob([buffer], { type: "application/octet-stream" });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement("a");
+    a.href       = url;
+    a.download   = `weekly_board_${formatTimestampForFile(new Date())}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
     showToast("Excel exported");
   }
 
