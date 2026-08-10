@@ -55,6 +55,8 @@
           :board-title="boardTitle"
           :members="currentMembers"
           :get-member-items="getMemberItems"
+          :get-weekly-report="getWeeklyReport"
+          :weekly-report-saving-ids="weeklyReportSavingIds"
           :current-user-id="currentUser.id"
           :is-admin="isAdmin"
           :copying-item-ids="copyingItemIds"
@@ -62,6 +64,7 @@
           @drop-item="handleItemDrop"
           @move-member-up="moveMemberUp"
           @copy-item-week="copyItemToAdjacentWeek"
+          @save-weekly-report="saveWeeklyReport"
         />
         <LoadingOverlay :active="boardLoading" message="Loading..." />
       </div>
@@ -115,6 +118,8 @@ const { currentUser, isAdmin, signOut } = useAuth();
 const {
   state, weekOptions, teamsData, currentMembers,
   boardLoading, noTeamMessage,
+  weeklyReports,
+  weeklyReportSavingIds,
   toastMessage, toastType, toastVisible,
   projectNames, priorities, hourOptions,
   memberModalOpen, memberModalContext, memberModalDraft, memberModalSaveHint, memberModalSaving,
@@ -124,6 +129,8 @@ const {
   init,
   onTeamChange, onYearChange, onWeekChange,
   getMemberItems,
+  getWeeklyReport,
+  saveWeeklyReport,
   moveMemberUp,
   openMemberModal, closeMemberModal, markMemberModalDirty,
   addDraftItem, deleteDraftItem, addDraftTask, deleteDraftTask, moveDraftItem,

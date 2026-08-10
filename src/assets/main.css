@@ -396,7 +396,7 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      min-width: 1240px;
+      min-width: 1540px;
       border-top: 1px solid #edf2f7;
       border-left: 1px solid #edf2f7;
     }
@@ -445,6 +445,11 @@
       background: linear-gradient(180deg, #e9f7ef 0%, #f7fffa 100%);
     }
 
+    .board-table thead th:nth-child(5),
+    .board-table tbody td:nth-child(5) {
+      background: linear-gradient(180deg, #f3f0ff 0%, #fbfaff 100%);
+    }
+
     .member-cell {
       width: 150px;
       min-width: 150px;
@@ -488,7 +493,7 @@
       color: #084298;
     }
 
-    .status-col { width: 31%; min-width: 330px; }
+    .status-col { width: 28%; min-width: 330px; }
     .status-head { display: flex; align-items: center; gap: 8px; }
     .status-pill {
       display: inline-flex;
@@ -504,6 +509,90 @@
     .status-pill.pending { background: var(--pending); color: #856404; }
     .status-pill.processing { background: var(--processing); color: #084298; }
     .status-pill.done { background: var(--done); color: #0f5132; }
+
+    /* ── Weekly Report ─────────────────────────────── */
+
+    .weekly-report-head {
+      min-width: 360px;
+    }
+
+    .weekly-report-title {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #eee9ff;
+      color: #513c9f;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .weekly-report-col {
+      width: 360px;
+      min-width: 360px;
+      position: relative;
+      padding: 10px !important;
+      vertical-align: top;
+    }
+
+    .weekly-report-editor {
+      position: absolute;
+      inset: 10px;
+      min-height: 0;
+    }
+
+    .weekly-report-textarea {
+      display: block;
+      width: 100%;
+      min-height: 0 !important;
+      height: 100% !important;
+      padding: 42px 10px 10px 10px;
+      resize: none;
+      overflow: auto;
+      line-height: 1.5;
+      background: rgba(
+        255,
+        255,
+        255,
+        0.88
+      );
+    }
+
+    .weekly-report-actions {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .weekly-report-action-btn {
+      min-height: 26px;
+      padding: 3px 7px;
+      border-radius: 7px;
+      font-size: 11px;
+    }
+
+    /*
+     * readonly 状态没有右上角两个按钮，
+     * 因此正文不需要预留顶部空间。
+     */
+    .weekly-report-editor.is-readonly
+    .weekly-report-textarea {
+      padding-top: 10px;
+      background: rgba(
+        255,
+        255,
+        255,
+        0.55
+      );
+      color: #475569;
+      cursor: text;
+    }
 
     .drop-zone {
       min-height: 110px;

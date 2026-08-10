@@ -28,6 +28,13 @@ const state = reactive({
 const boardData     = ref({});
 const boardLoading  = ref(false);
 
+// Weekly Report：
+// { [ownerId]: reportText }
+const weeklyReports = ref({});
+
+// 成员 Weekly Report 提交状态
+const weeklyReportSavingIds = reactive({});
+
 const noTeamMessage = ref("");
 
 const toastMessage   = ref("");
@@ -154,6 +161,7 @@ export function useBoardStore() {
     teamsData.value = [];
     membersData.value = [];
     boardData.value = {};
+    weeklyReports.value = {};
     weekOptions.value = [];
     importState.ownerId = "";
     importWeekOptions.value = [];
@@ -244,6 +252,7 @@ export function useBoardStore() {
     // 切换 team 一开始就清空旧数据 + 进入 loading，避免请求失败/变慢时页面残留上一个 team 的数据
     membersData.value  = [];
     boardData.value    = {};
+    weeklyReports.value = {};
     boardLoading.value = true;
     closeMemberModal();
 
@@ -339,6 +348,53 @@ export function useBoardStore() {
       return;
     }
 
+        // Weekly Reports：当前 Team + 当前 Week 一次性加载整个 Team
+    const {
+      data: reports,
+      error: reportsErr
+    } = await supabase
+      .from("weekly_reports")
+      .select("owner_id, report_text")
+      .eq("team_id", state.teamId)
+      .eq("year", state.year)
+      .eq("week_key", state.weekKey);
+
+    if (reportsErr) {
+      console.error(
+        "Failed to fetch weekly_reports",
+        reportsErr
+      );
+
+      weeklyReports.value = {};
+
+      showToast(
+        "Failed to load Weekly Reports: " +
+          (reportsErr.message || String(reportsErr)),
+        "error",
+        3000
+      );
+    } else {
+      const newReports = {};
+
+      membersData.value.forEach(member => {
+        newReports[member.userId] = "";
+      });
+
+      (reports || []).forEach(report => {
+        if (
+          Object.prototype.hasOwnProperty.call(
+            newReports,
+            report.owner_id
+          )
+        ) {
+          newReports[report.owner_id] =
+            report.report_text || "";
+        }
+      });
+
+      weeklyReports.value = newReports;
+    }
+
     const itemIds = (items || []).map(i => i.id);
     let tasksMap = {};
     if (itemIds.length) {
@@ -369,6 +425,87 @@ export function useBoardStore() {
   function getMemberItems(userId, status) {
     return boardData.value[userId]?.[status] || [];
   }
+
+  function getWeeklyReport(userId) {
+  return weeklyReports.value[userId] || "";
+}
+
+
+async function saveWeeklyReport(
+  ownerId,
+  reportText
+) {
+  if (
+    !state.teamId ||
+    !state.weekKey ||
+    weeklyReportSavingIds[ownerId]
+  ) {
+    return;
+  }
+
+  weeklyReportSavingIds[ownerId] = true;
+
+  try {
+    const normalizedText =
+      String(reportText ?? "");
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("weekly_reports")
+      .upsert(
+        {
+          team_id: state.teamId,
+          owner_id: ownerId,
+          year: Number(state.year),
+          week_key: state.weekKey,
+          report_text: normalizedText
+        },
+        {
+          onConflict:
+            "team_id,owner_id,year,week_key"
+        }
+      )
+      .select("report_text")
+      .single();
+
+    if (error) throw error;
+
+    weeklyReports.value = {
+      ...weeklyReports.value,
+
+      [ownerId]:
+        data?.report_text ??
+        normalizedText
+    };
+
+    showToast(
+      "Weekly Report submitted",
+      "success"
+    );
+
+  } catch (err) {
+    const message =
+      err?.message ||
+      String(err);
+
+    const isRlsDenied =
+      /row-level security/i.test(message) ||
+      /permission denied/i.test(message);
+
+    showToast(
+      isRlsDenied
+        ? "You can only submit your own Weekly Report."
+        : "Weekly Report submit failed: " + message,
+      "error",
+      3000
+    );
+
+  } finally {
+    delete weeklyReportSavingIds[ownerId];
+  }
+}
 
   // ══════════════════ 成员级编辑弹框 ══════════════════
 
@@ -832,6 +969,8 @@ export function useBoardStore() {
     STATUS_KEYS, STATUS_LABELS,
     state, weekOptions, teamsData, currentMembers,
     boardData, boardLoading, noTeamMessage,
+    weeklyReports,
+    weeklyReportSavingIds,
     toastMessage, toastType, toastVisible,
     settingsLoading, listOptions,
     hourOptions, projectNames, priorities, loadSettings,
@@ -844,6 +983,8 @@ export function useBoardStore() {
     onTeamChange, onYearChange, onWeekChange,
     loadBoard,
     getMemberItems,
+    getWeeklyReport,
+    saveWeeklyReport,
     moveMemberUp,
     openMemberModal, closeMemberModal, markMemberModalDirty,
     addDraftItem, deleteDraftItem, addDraftTask, deleteDraftTask, moveDraftItem,
