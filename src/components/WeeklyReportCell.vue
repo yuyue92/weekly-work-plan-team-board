@@ -34,7 +34,7 @@
         :disabled="saving"
         @click="submitReport"
       >
-        {{ saving ? "Submitting..." : "Submit" }}
+        {{ saving ? "Submitting..." : "Save" }}
       </button>
     </div>
   </div>
