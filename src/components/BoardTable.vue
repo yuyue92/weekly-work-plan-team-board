@@ -201,7 +201,6 @@
                   "
 
                   :editable="
-                    !isAdmin &&
                     member.userId === currentUserId
                   "
 
