@@ -451,8 +451,8 @@
     }
 
     .member-cell {
-      width: 150px;
-      min-width: 150px;
+      width: 180px;
+      min-width: 180px;
       font-weight: 800;
       color: #0f172a;
       background: #fbfdff !important;
@@ -1441,3 +1441,59 @@
     .session-warning-title { font-weight: 700; font-size: 16px; margin-bottom: 8px; color: #102a43; }
     .session-warning-desc { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
     .session-warning-actions { display: flex; gap: 10px; justify-content: center; }
+
+    /* ========== 结果汇总（Weekly Summary）页面 ========== */
+.toolbar { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+/* .toolbar .form-group { min-width: 160px; } */
+.section-title { font-size: 15px; font-weight: 700; color: #102a43; margin: 0; }
+.empty-note { color: var(--muted); font-size: 13px; padding: 12px 0; }
+
+/* ========== 打印 / 导出 PDF（window.print） ========== */
+.print-only { display: none; }
+
+@media print {
+  @page { size: A4; margin: 18mm 16mm; }
+
+  /* 只保留 .print-summary 及其子元素可见，其余全部隐藏 */
+  body * { visibility: hidden; }
+  .print-summary, .print-summary * { visibility: visible; }
+  .no-print { display: none !important; }
+
+  .print-summary {
+    display: block !important;
+    position: absolute;
+    left: 0; top: 0; width: 100%;
+    color: #0f172a;
+  }
+
+  .print-summary-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 10px;
+    margin-bottom: 18px;
+  }
+  .print-logo { font-size: 16px; font-weight: 800; letter-spacing: 0.5px; }
+  .print-logo span { color: #2563eb; }
+  .print-logo sup { font-size: 9px; }
+  .print-meta { text-align: right; }
+  .print-title { font-size: 15px; font-weight: 700; }
+  .print-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+
+  .print-summary-body { font-size: 13px; line-height: 1.8; }
+  .print-summary-body h2 {
+    font-size: 18px; margin: 18px 0 8px;
+    border-left: 4px solid #2563eb; padding-left: 8px;
+  }
+  .print-summary-body h3 {
+    font-size: 14px; margin: 14px 0 6px; color: #1d4ed8;
+  }
+  .print-summary-body p { margin: 4px 0; page-break-inside: avoid; }
+  .print-summary-body ul { margin: 4px 0 4px 20px; }
+
+  .print-summary-footer {
+    position: fixed; bottom: 8mm; left: 0; right: 0;
+    text-align: center; font-size: 10px; color: #94a3b8;
+  }
+}

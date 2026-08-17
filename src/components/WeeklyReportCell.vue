@@ -122,7 +122,7 @@ function buildSection(label, items) {
 
   return [
     label,
-    ...items.map(getItemReportLine)
+    ...items.map(item => `  • ${getItemReportLine(item)}`)
   ].join("\n");
 }
 

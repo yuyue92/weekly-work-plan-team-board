@@ -26,6 +26,12 @@ const routes = [
     component: () => import("../pages/AdminPage.vue"),
     meta:      { requiresAuth: true, requiresAdmin: true }
   },
+  {
+    path:      "/admin/summary",
+    name:      "AdminSummary",
+    component: () => import("../pages/SummaryPage.vue"),
+    meta:      { requiresAuth: true, requiresAdmin: true }
+  },
   // 兜底：未知路由重定向首页
   { path: "/:pathMatch(.*)*", redirect: "/" }
 ];
