@@ -52,13 +52,21 @@ onBeforeUnmount(() => editor.value?.destroy());
 </script>
 
 <style scoped>
-.tiptap-wrap { border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; overflow: hidden; background: #fff; }
-.tiptap-toolbar { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--border-color, #e2e8f0); background: #f8fafc; }
+.tiptap-wrap { border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; background: #fff; }
+.tiptap-toolbar {
+  display: flex; align-items: center; gap: 4px; padding: 6px 8px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0); background: #f8fafc;
+  border-radius: 8px 8px 0 0;
+  /* 吸顶：编辑框内容较长、页面往下滚动时，工具栏保持可见，不用滚回顶部才能改格式 */
+  position: sticky;
+  top: 66px;
+  z-index: 995;
+}
 .tt-btn { min-width: 30px; height: 28px; padding: 0 8px; font-size: 13px; border: 1px solid transparent; border-radius: 6px; background: transparent; cursor: pointer; }
 .tt-btn:hover { background: #e2e8f0; }
 .tt-btn.active { background: #dbeafe; border-color: #93c5fd; }
 .tt-divider { width: 1px; height: 18px; background: var(--border-color, #e2e8f0); margin: 0 4px; }
-.tiptap-content { padding: 16px; min-height: 360px; }
+.tiptap-content { padding: 16px; min-height: 360px; border-radius: 0 0 8px 8px; }
 .tiptap-content :deep(.ProseMirror) { outline: none; min-height: 340px; line-height: 1.7; }
 .tiptap-content :deep(h2) { font-size: 20px; margin: 14px 0 8px; }
 .tiptap-content :deep(h3) { font-size: 16px; margin: 12px 0 6px; }
