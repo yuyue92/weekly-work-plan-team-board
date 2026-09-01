@@ -2,19 +2,19 @@
   <div class="tiptap-wrap">
     <div class="tiptap-toolbar no-print">
       <button type="button" class="tt-btn" :class="{ active: editor?.isActive('bold') }"
-        title="加粗" @click="editor.chain().focus().toggleBold().run()"><b>B</b></button>
+        title="Bold" @click="editor.chain().focus().toggleBold().run()"><b>B</b></button>
       <button type="button" class="tt-btn" :class="{ active: editor?.isActive('underline') }"
-        title="下划线" @click="editor.chain().focus().toggleUnderline().run()"><u>U</u></button>
+        title="Underline" @click="editor.chain().focus().toggleUnderline().run()"><u>U</u></button>
       <span class="tt-divider"></span>
       <button type="button" class="tt-btn" :class="{ active: editor?.isActive('heading', { level: 2 }) }"
-        title="大标题" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">H2</button>
+        title="Heading 2" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">H2</button>
       <button type="button" class="tt-btn" :class="{ active: editor?.isActive('heading', { level: 3 }) }"
-        title="小标题" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()">H3</button>
+        title="Heading 3" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()">H3</button>
       <button type="button" class="tt-btn" :class="{ active: editor?.isActive('paragraph') }"
-        title="正文" @click="editor.chain().focus().setParagraph().run()">P</button>
+        title="Paragraph" @click="editor.chain().focus().setParagraph().run()">P</button>
       <span class="tt-divider"></span>
       <button type="button" class="tt-btn" :class="{ active: editor?.isActive('bulletList') }"
-        title="项目符号列表" @click="editor.chain().focus().toggleBulletList().run()">• 列表</button>
+        title="Bullet List" @click="editor.chain().focus().toggleBulletList().run()">• List</button>
     </div>
     <EditorContent :editor="editor" class="tiptap-content" />
   </div>

@@ -11,7 +11,7 @@
           {{ isAdmin ? 'Admin' : 'Staff' }}
         </span>
         <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin')">Admin Settings</button>
-        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin/summary')">结果汇总</button>
+        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin/summary')">Summary Report</button>
         <button class="btn btn-light btn-sm" @click="doSignOut">Sign Out</button>
       </div>
     </header>

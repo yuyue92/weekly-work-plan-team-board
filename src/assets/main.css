@@ -53,41 +53,6 @@
       gap: 30px;
     }
 
-    .app-header .logo {
-      position: relative;
-      display: inline-flex;
-      align-items: baseline;
-      gap: 6px;
-      padding-right: 12px;
-      color: #0b5cab;
-      white-space: nowrap;
-      margin-top: -4px;
-    }
-
-    .logo-pccw {
-      font-size: 36px;
-      line-height: 1;
-      font-weight: 900;
-      font-style: italic;
-      letter-spacing: -1.2px;
-    }
-
-    .logo-solutions {
-      font-size: 26px;
-      line-height: 1;
-      font-weight: 700;
-      letter-spacing: -0.4px;
-    }
-
-    .logo-registered {
-      position: absolute;
-      top: 5px;
-      right: 0;
-      font-size: 16px;
-      line-height: 1;
-      font-weight: 700;
-    }
-
     .app-title {
       margin: 0;
       font-size: 30px;
@@ -1463,6 +1428,8 @@
     display: block !important;
     position: absolute;
     left: 0; top: 0; width: 100%;
+    box-sizing: border-box;
+    padding: 6mm 4mm 0;
     color: #0f172a;
   }
 
@@ -1474,9 +1441,7 @@
     padding-bottom: 10px;
     margin-bottom: 18px;
   }
-  .print-logo { font-size: 16px; font-weight: 800; letter-spacing: 0.5px; }
-  .print-logo span { color: #2563eb; }
-  .print-logo sup { font-size: 9px; }
+
   .print-meta { text-align: right; }
   .print-title { font-size: 15px; font-weight: 700; }
   .print-sub { font-size: 11px; color: #475569; margin-top: 2px; }
