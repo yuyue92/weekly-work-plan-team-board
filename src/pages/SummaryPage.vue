@@ -80,6 +80,43 @@
           </div>
           <TiptapEditor ref="editorRef" v-model="draftHtml" @update:modelValue="onDraftChange" />
           <div class="summary-editor-actions">
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm summary-copy-btn"
+              :class="{ copied: copyState === 'success', failed: copyState === 'error' }"
+              :disabled="!summaryPlainText.trim()"
+              :title="
+                copyState === 'success'
+                  ? 'Copied!'
+                  : copyState === 'error'
+                    ? 'Copy failed, please copy manually'
+                    : 'Copy summary text'
+              "
+              @mousedown.prevent
+              @click="copySummary"
+            >
+              <svg
+                v-if="copyState !== 'success'"
+                class="copy-icon"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <rect x="3.2" y="3.2" width="10.6" height="10.6" rx="2" stroke="currentColor" stroke-width="1.4" opacity="0.55" />
+                <rect x="6.2" y="6.2" width="10.6" height="10.6" rx="2" fill="#fff" stroke="currentColor" stroke-width="1.4" />
+              </svg>
+              <svg
+                v-else
+                class="copy-icon"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path d="M4.5 10.5L8.2 14L15.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
             <button class="btn btn-primary btn-sm" :disabled="summarySaving" @click="doSave">
               {{ summarySaving ? "Saving..." : "Save" }}
             </button>
@@ -139,6 +176,50 @@ const editorRef  = ref(null);
 const draftHtml  = ref("");
 const saveHint   = ref("");
 const summaryLoaded = computed(() => !loading.value);
+
+// ── 快捷复制（Summary Editor 内容，HTML 转纯文本后复制）──
+const copyState = ref("idle"); // idle | success | error
+let copyStateTimer = null;
+
+function htmlToPlainText(html) {
+  const container = document.createElement("div");
+  container.innerHTML = String(html || "");
+  // p / h2 / h3 / li 等块级标签结束后补一个换行，避免所有文字挤在一行
+  container.querySelectorAll("p, h1, h2, h3, h4, li, br").forEach(el => {
+    el.insertAdjacentText("afterend", "\n");
+  });
+  return (container.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+const summaryPlainText = computed(() => htmlToPlainText(draftHtml.value));
+
+async function copyPlainText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+async function copySummary() {
+  const text = summaryPlainText.value;
+  if (!text) return;
+
+  const ok = await copyPlainText(text);
+  clearTimeout(copyStateTimer);
+  copyState.value = ok ? "success" : "error";
+  copyStateTimer = setTimeout(() => { copyState.value = "idle"; }, 1400);
+}
 
 const toastMsg = ref(""), toastType = ref("info"), toastVisible = ref(false);
 let toastTimer = null;

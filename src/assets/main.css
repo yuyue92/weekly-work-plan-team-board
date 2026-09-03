@@ -314,6 +314,20 @@
     .btn-light:hover { background: #e9ecef; }
     .btn-sm { padding: 4px 8px; min-height: 28px; font-size: 12px; border-radius: 8px; }
 
+    .summary-editor-actions { margin-top: 12px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+    .summary-copy-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .summary-copy-btn .copy-icon { width: 15px; height: 15px; }
+    .summary-copy-btn.copied { color: #146c43; border-color: #146c43; }
+    .summary-copy-btn.failed { color: #b02a37; border-color: #b02a37; }
+
     .save-status {
       color: var(--muted);
       font-size: 13px;
@@ -542,13 +556,36 @@
       font-size: 11px;
     }
 
+    .weekly-report-copy-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      padding: 0;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .weekly-report-copy-btn .copy-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    .weekly-report-copy-btn.copied {
+      color: #146c43;
+      border-color: #146c43;
+    }
+
+    .weekly-report-copy-btn.failed {
+      color: #b02a37;
+      border-color: #b02a37;
+    }
+
     /*
      * readonly 状态没有右上角两个按钮，
      * 因此正文不需要预留顶部空间。
      */
     .weekly-report-editor.is-readonly
     .weekly-report-textarea {
-      padding-top: 10px;
       background: rgba(
         255,
         255,
