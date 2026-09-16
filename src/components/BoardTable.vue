@@ -200,9 +200,7 @@
                     )
                   "
 
-                  :editable="
-                    member.userId === currentUserId
-                  "
+                  :editable="isAdmin || member.userId === currentUserId"
 
                   :saving="
                     Boolean(
