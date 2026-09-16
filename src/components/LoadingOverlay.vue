@@ -17,10 +17,10 @@
 
 <script setup>
 defineProps({
-  active:  { type: Boolean, default: false },
-  message: { type: String,  default: "" },
+  active: { type: Boolean, default: false },
+  message: { type: String, default: "" },
   // true：absolute 定位，铺满最近的 position:relative 祖先（比如弹框内部）
   // false（默认）：fixed 定位，铺满整个视口（比如切换周/Team 时）
-  inline:  { type: Boolean, default: false }
+  inline: { type: Boolean, default: false },
 });
 </script>

@@ -3,30 +3,41 @@ import ExcelJS from "exceljs";
 import { supabase } from "../lib/supabase.js";
 import { STATUS_KEYS, STATUS_LABELS, HOUR_KEYS, WEEKDAY_LABELS } from "../constants/index.js";
 import {
-  buildWorkWeeks, getDefaultWeekKey, normalizeYear,formatTimestampForFile,
-  addDays, parseDate, formatDate
+  buildWorkWeeks,
+  getDefaultWeekKey,
+  normalizeYear,
+  formatTimestampForFile,
+  addDays,
+  parseDate,
+  formatDate,
 } from "../utils/date.js";
 import {
-  createEmptyItem, createEmptyTask,
-  rowToItem, taskToRow, itemToRow, itemToUpdateRow,
-  isMeaningfulItem, isMeaningfulTask, cloneItem
+  createEmptyItem,
+  createEmptyTask,
+  rowToItem,
+  taskToRow,
+  itemToRow,
+  itemToUpdateRow,
+  isMeaningfulItem,
+  isMeaningfulTask,
+  cloneItem,
 } from "../utils/model.js";
 
 // ── 基础状态 ──────────────────────────────────────
-const weekOptions   = ref([]);
-const teamsData     = ref([]);   // [{ id, name }]
-const membersData   = ref([]);   // [{ userId, displayName, role, sortOrder }] for current team
+const weekOptions = ref([]);
+const teamsData = ref([]); // [{ id, name }]
+const membersData = ref([]); // [{ userId, displayName, role, sortOrder }] for current team
 
 const state = reactive({
-  teamId:  null,
-  teamName:"",
-  year:    new Date().getFullYear(),
-  weekKey: ""
+  teamId: null,
+  teamName: "",
+  year: new Date().getFullYear(),
+  weekKey: "",
 });
 
 // board 数据结构：{ [memberId]: { pending:[], processing:[], done:[] } }
-const boardData     = ref({});
-const boardLoading  = ref(false);
+const boardData = ref({});
+const boardLoading = ref(false);
 
 // Weekly Report：
 // { [ownerId]: reportText }
@@ -37,20 +48,20 @@ const weeklyReportSavingIds = reactive({});
 
 const noTeamMessage = ref("");
 
-const toastMessage   = ref("");
-const toastType      = ref("info"); // success | error | info
-const toastVisible   = ref(false);
-let toastTimer       = null;
+const toastMessage = ref("");
+const toastType = ref("info"); // success | error | info
+const toastVisible = ref(false);
+let toastTimer = null;
 
-const listOptions     = ref([]);        // [{ id, list_type, name, sort_order }]，project/priority/hour 都在这一份里
+const listOptions = ref([]); // [{ id, list_type, name, sort_order }]，project/priority/hour 都在这一份里
 const settingsLoading = ref(true);
 
 // ── 成员级编辑弹框：一个弹框管理某成员当周的 Pending / Processing / Done 三段 ──
-const memberModalOpen    = ref(false);
-const memberModalContext = ref(null);  // { memberId, displayName }
-const memberModalDraft   = reactive({ pending: [], processing: [], done: [] });
+const memberModalOpen = ref(false);
+const memberModalContext = ref(null); // { memberId, displayName }
+const memberModalDraft = reactive({ pending: [], processing: [], done: [] });
 const memberModalSaveHint = ref("Changes are not saved automatically");
-const memberModalSaving   = ref(false);
+const memberModalSaving = ref(false);
 const deletedItemIds = ref([]); // 弹框编辑期间被删除的 work_item id，保存时才真正落库
 const deletedTaskIds = ref([]); // 同上，task 粒度
 
@@ -59,38 +70,34 @@ const copyingItemIds = reactive({});
 
 // 管理员按成员复制周数据
 const importState = reactive({
-  ownerId:       "",
-  sourceYear:    state.year,
-  sourceWeekKey: ""
+  ownerId: "",
+  sourceYear: state.year,
+  sourceWeekKey: "",
 });
 const importWeekOptions = ref([]);
-const importSaving      = ref(false);
+const importSaving = ref(false);
 
 export function useBoardStore() {
-
   const TOAST_DEFAULT_DURATION = { success: 1800, error: 3200, info: 1800 };
   // ── 工具 ──────────────────────────────────────────
   function showToast(msg, type = "info", duration = 1800) {
     toastMessage.value = msg;
-    toastType.value    = type;
+    toastType.value = type;
     toastVisible.value = true;
     if (toastTimer) clearTimeout(toastTimer);
     const resolvedDuration = duration ?? TOAST_DEFAULT_DURATION[type] ?? 1800;
-    toastTimer = setTimeout(() => { toastVisible.value = false; }, resolvedDuration);
+    toastTimer = setTimeout(() => {
+      toastVisible.value = false;
+    }, resolvedDuration);
   }
 
   function findWeekByStartDate(startDate, preferredYear) {
     const dateYear = parseDate(startDate).getFullYear();
-    const years = [...new Set([
-      Number(preferredYear),
-      dateYear,
-      Number(preferredYear) - 1,
-      Number(preferredYear) + 1
-    ])];
+    const years = [...new Set([Number(preferredYear), dateYear, Number(preferredYear) - 1, Number(preferredYear) + 1])];
 
     for (const year of years) {
       const options = buildWorkWeeks(year);
-      const week = options.find(item => item.startDate === startDate);
+      const week = options.find((item) => item.startDate === startDate);
       if (week) return { year, options, week };
     }
 
@@ -98,11 +105,11 @@ export function useBoardStore() {
   }
 
   function resetImportDefaults() {
-    if (!membersData.value.some(member => member.userId === importState.ownerId)) {
+    if (!membersData.value.some((member) => member.userId === importState.ownerId)) {
       importState.ownerId = membersData.value[0]?.userId || "";
     }
 
-    const targetWeek = weekOptions.value.find(week => week.key === state.weekKey);
+    const targetWeek = weekOptions.value.find((week) => week.key === state.weekKey);
 
     if (!targetWeek) {
       importState.sourceYear = state.year;
@@ -137,10 +144,7 @@ export function useBoardStore() {
 
     importState.sourceYear = year;
     importWeekOptions.value = options;
-    importState.sourceWeekKey =
-      options.find(week => week.weekNo === previousWeekNo)?.key ||
-      options[0]?.key ||
-      "";
+    importState.sourceWeekKey = options.find((week) => week.weekNo === previousWeekNo)?.key || options[0]?.key || "";
   }
 
   function onImportSourceWeekChange(weekKey) {
@@ -202,8 +206,7 @@ export function useBoardStore() {
       let teams = [];
 
       if (isAdmin) {
-        const { data, error } = await supabase
-          .from("teams").select("id, name").order("name");
+        const { data, error } = await supabase.from("teams").select("id, name").order("name");
         if (error) throw error;
         teams = data || [];
       } else {
@@ -213,18 +216,19 @@ export function useBoardStore() {
         }
 
         const { data: memberships, error: membershipErr } = await supabase
-          .from("team_users").select("team_id").eq("user_id", userId);
+          .from("team_users")
+          .select("team_id")
+          .eq("user_id", userId);
         if (membershipErr) throw membershipErr;
 
-        const teamIds = [...new Set((memberships || []).map(row => row.team_id).filter(Boolean))];
+        const teamIds = [...new Set((memberships || []).map((row) => row.team_id).filter(Boolean))];
 
         if (!teamIds.length) {
           noTeamMessage.value = "Your account hasn't been added to any team yet. Please contact an administrator.";
           return;
         }
 
-        const { data, error } = await supabase
-          .from("teams").select("id, name").in("id", teamIds).order("name");
+        const { data, error } = await supabase.from("teams").select("id, name").in("id", teamIds).order("name");
         if (error) throw error;
         teams = data || [];
       }
@@ -244,14 +248,14 @@ export function useBoardStore() {
 
   // ── 切换 team ─────────────────────────────────────
   async function onTeamChange(teamId) {
-    const team = teamsData.value.find(t => t.id === teamId);
+    const team = teamsData.value.find((t) => t.id === teamId);
     if (!team) return;
-    state.teamId   = team.id;
+    state.teamId = team.id;
     state.teamName = team.name;
 
     // 切换 team 一开始就清空旧数据 + 进入 loading，避免请求失败/变慢时页面残留上一个 team 的数据
-    membersData.value  = [];
-    boardData.value    = {};
+    membersData.value = [];
+    boardData.value = {};
     weeklyReports.value = {};
     boardLoading.value = true;
     closeMemberModal();
@@ -266,19 +270,19 @@ export function useBoardStore() {
       if (error) throw error;
 
       membersData.value = (data || [])
-        .filter(row => row.profiles)
-        .map(row => ({
-          userId:      row.profiles.id,
-          staffId:     row.profiles.staff_id || "",
+        .filter((row) => row.profiles)
+        .map((row) => ({
+          userId: row.profiles.id,
+          staffId: row.profiles.staff_id || "",
           displayName: row.profiles.display_name,
-          role:        row.profiles.role,
-          sortOrder:   row.sort_order
+          role: row.profiles.role,
+          sortOrder: row.sort_order,
         }));
 
       const weeks = buildWorkWeeks(state.year);
       weekOptions.value = weeks;
 
-      if (!weeks.some(week => week.key === state.weekKey)) {
+      if (!weeks.some((week) => week.key === state.weekKey)) {
         state.weekKey = getDefaultWeekKey(state.year, weeks);
       }
 
@@ -310,16 +314,16 @@ export function useBoardStore() {
   // ── 成员排序：和"上一个人"互换 sort_order（只有 admin 会调用）──
   async function moveMemberUp(userId) {
     const list = membersData.value;
-    const idx  = list.findIndex(m => m.userId === userId);
+    const idx = list.findIndex((m) => m.userId === userId);
     if (idx <= 0) return;
 
-    const current  = list[idx];
+    const current = list[idx];
     const previous = list[idx - 1];
 
     const { error } = await supabase.rpc("swap_member_sort_order", {
       p_team_id: state.teamId,
-      p_user_a:  current.userId,
-      p_user_b:  previous.userId
+      p_user_a: current.userId,
+      p_user_b: previous.userId,
     });
     if (error) {
       showToast("Sort failed: " + error.message, "error");
@@ -348,11 +352,8 @@ export function useBoardStore() {
       return;
     }
 
-        // Weekly Reports：当前 Team + 当前 Week 一次性加载整个 Team
-    const {
-      data: reports,
-      error: reportsErr
-    } = await supabase
+    // Weekly Reports：当前 Team + 当前 Week 一次性加载整个 Team
+    const { data: reports, error: reportsErr } = await supabase
       .from("weekly_reports")
       .select("owner_id, report_text")
       .eq("team_id", state.teamId)
@@ -360,60 +361,49 @@ export function useBoardStore() {
       .eq("week_key", state.weekKey);
 
     if (reportsErr) {
-      console.error(
-        "Failed to fetch weekly_reports",
-        reportsErr
-      );
+      console.error("Failed to fetch weekly_reports", reportsErr);
 
       weeklyReports.value = {};
 
-      showToast(
-        "Failed to load Weekly Reports: " +
-          (reportsErr.message || String(reportsErr)),
-        "error",
-        3000
-      );
+      showToast("Failed to load Weekly Reports: " + (reportsErr.message || String(reportsErr)), "error", 3000);
     } else {
       const newReports = {};
 
-      membersData.value.forEach(member => {
+      membersData.value.forEach((member) => {
         newReports[member.userId] = "";
       });
 
-      (reports || []).forEach(report => {
-        if (
-          Object.prototype.hasOwnProperty.call(
-            newReports,
-            report.owner_id
-          )
-        ) {
-          newReports[report.owner_id] =
-            report.report_text || "";
+      (reports || []).forEach((report) => {
+        if (Object.prototype.hasOwnProperty.call(newReports, report.owner_id)) {
+          newReports[report.owner_id] = report.report_text || "";
         }
       });
 
       weeklyReports.value = newReports;
     }
 
-    const itemIds = (items || []).map(i => i.id);
+    const itemIds = (items || []).map((i) => i.id);
     let tasksMap = {};
     if (itemIds.length) {
       const { data: tasks, error: tasksErr } = await supabase
-        .from("tasks").select("*").in("work_item_id", itemIds).order("sort_order");
+        .from("tasks")
+        .select("*")
+        .in("work_item_id", itemIds)
+        .order("sort_order");
       if (tasksErr) console.error("Failed to fetch tasks", tasksErr);
-      (tasks || []).forEach(t => {
+      (tasks || []).forEach((t) => {
         if (!tasksMap[t.work_item_id]) tasksMap[t.work_item_id] = [];
         tasksMap[t.work_item_id].push(t);
       });
     }
 
     const newBoard = {};
-    membersData.value.forEach(m => {
+    membersData.value.forEach((m) => {
       newBoard[m.userId] = { pending: [], processing: [], done: [] };
     });
-    (items || []).forEach(row => {
+    (items || []).forEach((row) => {
       const tasks = tasksMap[row.id] || [];
-      const item  = rowToItem(row, tasks);
+      const item = rowToItem(row, tasks);
       if (newBoard[row.owner_id]) {
         newBoard[row.owner_id][row.status].push(item);
       }
@@ -427,96 +417,70 @@ export function useBoardStore() {
   }
 
   function getWeeklyReport(userId) {
-  return weeklyReports.value[userId] || "";
-}
-
-
-async function saveWeeklyReport(
-  ownerId,
-  reportText
-) {
-  if (
-    !state.teamId ||
-    !state.weekKey ||
-    weeklyReportSavingIds[ownerId]
-  ) {
-    return;
+    return weeklyReports.value[userId] || "";
   }
 
-  weeklyReportSavingIds[ownerId] = true;
+  async function saveWeeklyReport(ownerId, reportText) {
+    if (!state.teamId || !state.weekKey || weeklyReportSavingIds[ownerId]) {
+      return;
+    }
 
-  try {
-    const normalizedText =
-      String(reportText ?? "");
+    weeklyReportSavingIds[ownerId] = true;
 
-    const {
-      data,
-      error
-    } = await supabase
-      .from("weekly_reports")
-      .upsert(
-        {
-          team_id: state.teamId,
-          owner_id: ownerId,
-          year: Number(state.year),
-          week_key: state.weekKey,
-          report_text: normalizedText
-        },
-        {
-          onConflict:
-            "team_id,owner_id,year,week_key"
-        }
-      )
-      .select("report_text")
-      .single();
+    try {
+      const normalizedText = String(reportText ?? "");
 
-    if (error) throw error;
+      const { data, error } = await supabase
+        .from("weekly_reports")
+        .upsert(
+          {
+            team_id: state.teamId,
+            owner_id: ownerId,
+            year: Number(state.year),
+            week_key: state.weekKey,
+            report_text: normalizedText,
+          },
+          {
+            onConflict: "team_id,owner_id,year,week_key",
+          }
+        )
+        .select("report_text")
+        .single();
 
-    weeklyReports.value = {
-      ...weeklyReports.value,
+      if (error) throw error;
 
-      [ownerId]:
-        data?.report_text ??
-        normalizedText
-    };
+      weeklyReports.value = {
+        ...weeklyReports.value,
 
-    showToast(
-      "Weekly Report submitted",
-      "success"
-    );
+        [ownerId]: data?.report_text ?? normalizedText,
+      };
 
-  } catch (err) {
-    const message =
-      err?.message ||
-      String(err);
+      showToast("Weekly Report submitted", "success");
+    } catch (err) {
+      const message = err?.message || String(err);
 
-    const isRlsDenied =
-      /row-level security/i.test(message) ||
-      /permission denied/i.test(message);
+      const isRlsDenied = /row-level security/i.test(message) || /permission denied/i.test(message);
 
-    showToast(
-      isRlsDenied
-        ? "You can only submit your own Weekly Report."
-        : "Weekly Report submit failed: " + message,
-      "error",
-      3000
-    );
-
-  } finally {
-    delete weeklyReportSavingIds[ownerId];
+      showToast(
+        isRlsDenied ? "You can only submit your own Weekly Report." : "Weekly Report submit failed: " + message,
+        "error",
+        3000
+      );
+    } finally {
+      delete weeklyReportSavingIds[ownerId];
+    }
   }
-}
 
   // ══════════════════ 成员级编辑弹框 ══════════════════
 
   function openMemberModal(userId) {
-    const member = membersData.value.find(m => m.userId === userId);
+    const member = membersData.value.find((m) => m.userId === userId);
     if (!member) return;
 
     memberModalContext.value = { memberId: userId, displayName: member.displayName };
-    memberModalDraft.pending    = getMemberItems(userId, "pending").map(cloneItem);
+    memberModalDraft.pending = getMemberItems(userId, "pending").map(cloneItem);
     memberModalDraft.processing = getMemberItems(userId, "processing").map(cloneItem);
-    memberModalDraft.done       = getMemberItems(userId, "done").map(cloneItem);
+    memberModalDraft.done = getMemberItems(userId, "done").map(cloneItem);
     deletedItemIds.value = [];
     deletedTaskIds.value = [];
     memberModalSaveHint.value = "Changes are not saved automatically";
@@ -534,7 +498,7 @@ async function saveWeeklyReport(
   }
 
   function markMemberModalDirty() {
-    memberModalSaveHint.value = "Unsaved changes — click \"Save & Close\" to apply them";
+    memberModalSaveHint.value = 'Unsaved changes — click "Save & Close" to apply them';
   }
 
   function addDraftItem(status) {
@@ -585,13 +549,11 @@ async function saveWeeklyReport(
   }
 
   function buildTaskPayload(tasks) {
-    return (tasks || [])
-      .filter(isMeaningfulTask)
-      .map((t, i) => {
-        const row = taskToRow(t, null);
-        delete row.work_item_id;
-        return { ...row, sort_order: i };
-      });
+    return (tasks || []).filter(isMeaningfulTask).map((t, i) => {
+      const row = taskToRow(t, null);
+      delete row.work_item_id;
+      return { ...row, sort_order: i };
+    });
   }
 
   async function saveMemberModalAndClose() {
@@ -606,17 +568,17 @@ async function saveWeeklyReport(
             if (!isMeaningfulItem(item)) continue; // 新增但仍是空白行，跳过不建
             const { error } = await supabase.rpc("save_work_item_with_tasks", {
               p_work_item: itemToRow(item, state.teamId, state.year, state.weekKey),
-              p_tasks:     buildTaskPayload(item.tasks),
-              p_is_new:    true,
-              p_item_id:   null
+              p_tasks: buildTaskPayload(item.tasks),
+              p_is_new: true,
+              p_item_id: null,
             });
             if (error) throw error;
           } else {
             const { error } = await supabase.rpc("save_work_item_with_tasks", {
               p_work_item: itemToUpdateRow(item),
-              p_tasks:     buildTaskPayload(item.tasks),
-              p_is_new:    false,
-              p_item_id:   item.id
+              p_tasks: buildTaskPayload(item.tasks),
+              p_is_new: false,
+              p_item_id: item.id,
             });
             if (error) throw error;
           }
@@ -661,7 +623,8 @@ async function saveWeeklyReport(
       showToast(
         isRlsDenied
           ? "You don't have permission to move this Work Item to another member. Please contact an administrator to reassign it."
-          : "Move failed: " + (err.message || String(err)), "error",
+          : "Move failed: " + (err.message || String(err)),
+        "error",
         3000
       );
       if (isRlsDenied) await loadBoard();
@@ -672,8 +635,8 @@ async function saveWeeklyReport(
   async function copyItemToAdjacentWeek(memberId, status, itemId, direction) {
     if (copyingItemIds[itemId]) return;
 
-    const item = getMemberItems(memberId, status).find(i => i.id === itemId);
-    const sourceWeek = weekOptions.value.find(w => w.key === state.weekKey);
+    const item = getMemberItems(memberId, status).find((i) => i.id === itemId);
+    const sourceWeek = weekOptions.value.find((w) => w.key === state.weekKey);
     if (!item || !sourceWeek) return;
 
     const targetStartDate = formatDate(addDays(parseDate(sourceWeek.startDate), direction * 7));
@@ -696,9 +659,9 @@ async function saveWeeklyReport(
       const payload = cloneItem(item);
       const { error } = await supabase.rpc("save_work_item_with_tasks", {
         p_work_item: itemToRow(payload, state.teamId, matched.year, matched.week.key),
-        p_tasks:     buildTaskPayload(payload.tasks),
-        p_is_new:    true,
-        p_item_id:   null
+        p_tasks: buildTaskPayload(payload.tasks),
+        p_is_new: true,
+        p_item_id: null,
       });
       if (error) throw error;
 
@@ -713,7 +676,8 @@ async function saveWeeklyReport(
       showToast(
         isRlsDenied
           ? "You don't have permission to copy this Work Item. Please contact an administrator."
-          : "Copy failed: " + (err.message || String(err)), "error",
+          : "Copy failed: " + (err.message || String(err)),
+        "error",
         3000
       );
     } finally {
@@ -723,7 +687,7 @@ async function saveWeeklyReport(
 
   // ── 清空当前周（仅 admin）─────────────────────────
   async function clearCurrentWeek() {
-    const week = weekOptions.value.find(w => w.key === state.weekKey);
+    const week = weekOptions.value.find((w) => w.key === state.weekKey);
     if (!confirm(`Clear all data for ${state.teamName} in ${week?.label}?`)) return;
     const { error } = await supabase
       .from("work_items")
@@ -731,7 +695,10 @@ async function saveWeeklyReport(
       .eq("team_id", state.teamId)
       .eq("year", state.year)
       .eq("week_key", state.weekKey);
-    if (error) { showToast("Clear failed: " + error.message, "error"); return; }
+    if (error) {
+      showToast("Clear failed: " + error.message, "error");
+      return;
+    }
     await loadBoard();
     showToast("Current week cleared", "success");
   }
@@ -740,9 +707,9 @@ async function saveWeeklyReport(
   async function copySelectedMemberWeek() {
     if (boardLoading.value || importSaving.value) return;
 
-    const member = membersData.value.find(item => item.userId === importState.ownerId);
-    const sourceWeek = importWeekOptions.value.find(item => item.key === importState.sourceWeekKey);
-    const targetWeek = weekOptions.value.find(item => item.key === state.weekKey);
+    const member = membersData.value.find((item) => item.userId === importState.ownerId);
+    const sourceWeek = importWeekOptions.value.find((item) => item.key === importState.sourceWeekKey);
+    const targetWeek = weekOptions.value.find((item) => item.key === state.weekKey);
 
     if (!member || !sourceWeek || !targetWeek) {
       showToast("Please select a source week and a member to import.", "info");
@@ -755,7 +722,8 @@ async function saveWeeklyReport(
     }
 
     const targetItemCount = STATUS_KEYS.reduce(
-      (total, status) => total + getMemberItems(member.userId, status).length, 0
+      (total, status) => total + getMemberItems(member.userId, status).length,
+      0
     );
 
     const replaceExisting = targetItemCount > 0;
@@ -768,14 +736,14 @@ async function saveWeeklyReport(
     importSaving.value = true;
     try {
       const { data, error } = await supabase.rpc("copy_member_week", {
-        p_team_id:          state.teamId,
-        p_owner_id:         member.userId,
-        p_source_year:      Number(importState.sourceYear),
-        p_source_week_key:  importState.sourceWeekKey,
-        p_target_year:      Number(state.year),
-        p_target_week_key:  state.weekKey,
-        p_shift_days:       calendarDayDiff(sourceWeek.startDate, targetWeek.startDate),
-        p_replace_existing: replaceExisting
+        p_team_id: state.teamId,
+        p_owner_id: member.userId,
+        p_source_year: Number(importState.sourceYear),
+        p_source_week_key: importState.sourceWeekKey,
+        p_target_year: Number(state.year),
+        p_target_week_key: state.weekKey,
+        p_shift_days: calendarDayDiff(sourceWeek.startDate, targetWeek.startDate),
+        p_replace_existing: replaceExisting,
       });
       if (error) throw error;
 
@@ -788,23 +756,24 @@ async function saveWeeklyReport(
     }
   }
 
-
   // ── Excel 导出：每个成员一个 sheet，行 = 天 × item 的笛卡儿积（过滤掉当天工时为 0 的组合）──
   // Excel sheet 名称限制：<=31 字符，且不能包含 : \ / ? * [ ]
   function sanitizeSheetName(name) {
-    const cleaned = String(name || "Member").replace(/[:\\/?*[\]]/g, " ").trim();
+    const cleaned = String(name || "Member")
+      .replace(/[:\\/?*[\]]/g, " ")
+      .trim();
     return (cleaned || "Member").slice(0, 31);
   }
 
-  const EXCEL_YELLOW_FILL   = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
-  const EXCEL_GREEN_FILL    = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92D050" } }; // 刚好 8 小时
-  const EXCEL_RED_FILL      = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF6B6B" } }; // 超过 8 小时
+  const EXCEL_YELLOW_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+  const EXCEL_GREEN_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92D050" } }; // 刚好 8 小时
+  const EXCEL_RED_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF6B6B" } }; // 超过 8 小时
   const EXCEL_BLUEGRAY_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FF8EA9C4" } }; // 不足 8 小时
-  const EXCEL_THIN_BORDER   = {
-    top:    { style: "thin" },
-    left:   { style: "thin" },
+  const EXCEL_THIN_BORDER = {
+    top: { style: "thin" },
+    left: { style: "thin" },
     bottom: { style: "thin" },
-    right:  { style: "thin" }
+    right: { style: "thin" },
   };
 
   // 明细表整体从第 10 行开始，之前 1~9 行留给 Name/Team/Week 头信息 + 每日工时小表格
@@ -818,7 +787,7 @@ async function saveWeeklyReport(
   const COLUMN_WIDTHS_PX = [80, 120, 160, 80, 160, 160, 80, 80];
 
   async function exportExcel() {
-    const week = weekOptions.value.find(w => w.key === state.weekKey);
+    const week = weekOptions.value.find((w) => w.key === state.weekKey);
     const days = week?.days || [];
     if (!days.length) {
       showToast("Current week has no date range to export.", "info");
@@ -829,9 +798,9 @@ async function saveWeeklyReport(
     const wb = new ExcelJS.Workbook();
     const usedSheetNames = new Set();
 
-    membersData.value.forEach(member => {
-      const items = STATUS_KEYS.flatMap(status => getMemberItems(member.userId, status));
-      
+    membersData.value.forEach((member) => {
+      const items = STATUS_KEYS.flatMap((status) => getMemberItems(member.userId, status));
+
       let sheetName = sanitizeSheetName(member.displayName);
       let suffix = 2;
       while (usedSheetNames.has(sheetName)) {
@@ -840,22 +809,22 @@ async function saveWeeklyReport(
       usedSheetNames.add(sheetName);
 
       const ws = wb.addWorksheet(sheetName);
-      ws.columns = COLUMN_WIDTHS_PX.map(px => ({ width: pxToExcelWidth(px) }));
+      ws.columns = COLUMN_WIDTHS_PX.map((px) => ({ width: pxToExcelWidth(px) }));
 
       // ── 第 1 行：Staff ID / Name / Team / Week ── 第 2 行留空
       ws.getCell("A1").value = "Staff ID";
       ws.getCell("B1").value = member.staffId || "";
-      ws.getCell("B1").fill  = EXCEL_YELLOW_FILL;
+      ws.getCell("B1").fill = EXCEL_YELLOW_FILL;
       ws.getCell("C1").value = "Name";
       ws.getCell("D1").value = member.displayName;
-      ws.getCell("D1").fill  = EXCEL_YELLOW_FILL;
+      ws.getCell("D1").fill = EXCEL_YELLOW_FILL;
       ws.getCell("E1").value = "Team";
       ws.getCell("F1").value = state.teamName;
-      ws.getCell("F1").fill  = EXCEL_YELLOW_FILL;
+      ws.getCell("F1").fill = EXCEL_YELLOW_FILL;
       ws.getCell("G1").value = "Week";
       ws.getCell("H1").value = week.weekNo;
-      ws.getCell("H1").fill  = EXCEL_YELLOW_FILL;
-      ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"].forEach(ref => {
+      ws.getCell("H1").fill = EXCEL_YELLOW_FILL;
+      ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"].forEach((ref) => {
         ws.getCell(ref).border = EXCEL_THIN_BORDER;
       });
 
@@ -865,22 +834,22 @@ async function saveWeeklyReport(
       ws.getCell("D3").value = "Hours";
 
       days.forEach((date, idx) => {
-        const rowNum     = 4 + idx;
-        const hourKey     = HOUR_KEYS[idx];
-        const hoursTotal  = items.reduce((sum, i) => sum + (Number(i.hours?.[hourKey]) || 0), 0);
+        const rowNum = 4 + idx;
+        const hourKey = HOUR_KEYS[idx];
+        const hoursTotal = items.reduce((sum, i) => sum + (Number(i.hours?.[hourKey]) || 0), 0);
 
         ws.getCell(`B${rowNum}`).value = WEEKDAY_LABELS[idx];
         ws.getCell(`C${rowNum}`).value = date;
 
         const hoursCell = ws.getCell(`D${rowNum}`);
         hoursCell.value = hoursTotal;
-        if (hoursTotal === 8)    hoursCell.fill = EXCEL_GREEN_FILL;
+        if (hoursTotal === 8) hoursCell.fill = EXCEL_GREEN_FILL;
         else if (hoursTotal > 8) hoursCell.fill = EXCEL_RED_FILL;
-        else                     hoursCell.fill = EXCEL_BLUEGRAY_FILL;
+        else hoursCell.fill = EXCEL_BLUEGRAY_FILL;
       });
 
       for (let rowNum = 3; rowNum <= 8; rowNum++) {
-        ["B", "C", "D"].forEach(col => {
+        ["B", "C", "D"].forEach((col) => {
           ws.getCell(`${col}${rowNum}`).border = EXCEL_THIN_BORDER;
         });
       }
@@ -890,8 +859,8 @@ async function saveWeeklyReport(
       headers.forEach((label, idx) => {
         const cell = headerRow.getCell(idx + 1);
         cell.value = label;
-        cell.fill  = EXCEL_YELLOW_FILL;
-        cell.border = EXCEL_THIN_BORDER
+        cell.fill = EXCEL_YELLOW_FILL;
+        cell.border = EXCEL_THIN_BORDER;
       });
 
       let rowCursor = DETAIL_TABLE_START_ROW + 1;
@@ -900,23 +869,29 @@ async function saveWeeklyReport(
       // 某个 item 在某天工时为 0，则这一天这一行直接跳过，不写入。
       days.forEach((date, dayIdx) => {
         const hourKey = HOUR_KEYS[dayIdx];
-        items.forEach(item => {
+        items.forEach((item) => {
           const hoursValue = Number(item.hours?.[hourKey]) || 0;
           if (hoursValue <= 0) return;
 
           const tasksStr = (item.tasks || [])
-            .map(t => t.task_name)
+            .map((t) => t.task_name)
             .filter(Boolean)
             .join(", ");
           const descriptionStr = (item.tasks || [])
-            .map(t => t.description)
+            .map((t) => t.description)
             .filter(Boolean)
             .join(", ");
 
           const dataRow = ws.getRow(rowCursor);
           dataRow.values = [
-            date, item.project_name || "", item.work_item || "", item.ref_id || "",
-            tasksStr, descriptionStr, item.priority || "", hoursValue
+            date,
+            item.project_name || "",
+            item.work_item || "",
+            item.ref_id || "",
+            tasksStr,
+            descriptionStr,
+            item.priority || "",
+            hoursValue,
           ];
           for (let col = 1; col <= headers.length; col++) {
             dataRow.getCell(col).border = EXCEL_THIN_BORDER;
@@ -926,11 +901,11 @@ async function saveWeeklyReport(
       });
     });
     const buffer = await wb.xlsx.writeBuffer();
-    const blob   = new Blob([buffer], { type: "application/octet-stream" });
-    const url    = URL.createObjectURL(blob);
-    const a      = document.createElement("a");
-    a.href       = url;
-    a.download   = `weekly_board_${formatTimestampForFile(new Date())}.xlsx`;
+    const blob = new Blob([buffer], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `weekly_board_${formatTimestampForFile(new Date())}.xlsx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -940,60 +915,85 @@ async function saveWeeklyReport(
 
   // ── computed ──────────────────────────────────────
   const boardTitle = computed(() => {
-    const week = weekOptions.value.find(w => w.key === state.weekKey);
+    const week = weekOptions.value.find((w) => w.key === state.weekKey);
     return week ? `${state.teamName} - ${week.label}` : state.teamName;
   });
-  const startDateDisplay = computed(() => weekOptions.value.find(w => w.key === state.weekKey)?.startDate || "");
-  const endDateDisplay   = computed(() => weekOptions.value.find(w => w.key === state.weekKey)?.endDate || "");
-  const currentMembers   = computed(() => membersData.value);
+  const startDateDisplay = computed(() => weekOptions.value.find((w) => w.key === state.weekKey)?.startDate || "");
+  const endDateDisplay = computed(() => weekOptions.value.find((w) => w.key === state.weekKey)?.endDate || "");
+  const currentMembers = computed(() => membersData.value);
 
-  const projectNames = computed(() =>
-    listOptions.value.filter(o => o.list_type === "project").map(o => o.name)
-  );
-  const priorities = computed(() =>
-    listOptions.value.filter(o => o.list_type === "priority").map(o => o.name)
-  );
+  const projectNames = computed(() => listOptions.value.filter((o) => o.list_type === "project").map((o) => o.name));
+  const priorities = computed(() => listOptions.value.filter((o) => o.list_type === "priority").map((o) => o.name));
   const hourOptions = computed(() =>
     listOptions.value
-      .filter(o => o.list_type === "hour")
-      .map(o => Number(o.name))
-      .filter(n => !Number.isNaN(n))
+      .filter((o) => o.list_type === "hour")
+      .map((o) => Number(o.name))
+      .filter((n) => !Number.isNaN(n))
   );
 
   // 当前周 Mon~Fri 五天的具体日期（"YYYY-MM-DD"），供成员编辑弹框在工时列标题下面展示
-  const currentWeekDays  = computed(() =>
-    weekOptions.value.find(w => w.key === state.weekKey)?.days || []
-  );
+  const currentWeekDays = computed(() => weekOptions.value.find((w) => w.key === state.weekKey)?.days || []);
 
   return {
-    STATUS_KEYS, STATUS_LABELS,
-    state, weekOptions, teamsData, currentMembers,
-    boardData, boardLoading, noTeamMessage,
+    STATUS_KEYS,
+    STATUS_LABELS,
+    state,
+    weekOptions,
+    teamsData,
+    currentMembers,
+    boardData,
+    boardLoading,
+    noTeamMessage,
     weeklyReports,
     weeklyReportSavingIds,
-    toastMessage, toastType, toastVisible,
-    settingsLoading, listOptions,
-    hourOptions, projectNames, priorities, loadSettings,
-    memberModalOpen, memberModalContext, memberModalDraft,
-    memberModalSaveHint, memberModalSaving,
-    importState, importWeekOptions, importSaving,
-    boardTitle, startDateDisplay, endDateDisplay, currentWeekDays,
+    toastMessage,
+    toastType,
+    toastVisible,
+    settingsLoading,
+    listOptions,
+    hourOptions,
+    projectNames,
+    priorities,
+    loadSettings,
+    memberModalOpen,
+    memberModalContext,
+    memberModalDraft,
+    memberModalSaveHint,
+    memberModalSaving,
+    importState,
+    importWeekOptions,
+    importSaving,
+    boardTitle,
+    startDateDisplay,
+    endDateDisplay,
+    currentWeekDays,
     copyingItemIds,
     init,
-    onTeamChange, onYearChange, onWeekChange,
+    onTeamChange,
+    onYearChange,
+    onWeekChange,
     loadBoard,
     getMemberItems,
     getWeeklyReport,
     saveWeeklyReport,
     moveMemberUp,
-    openMemberModal, closeMemberModal, markMemberModalDirty,
-    addDraftItem, deleteDraftItem, addDraftTask, deleteDraftTask, moveDraftItem,
+    openMemberModal,
+    closeMemberModal,
+    markMemberModalDirty,
+    addDraftItem,
+    deleteDraftItem,
+    addDraftTask,
+    deleteDraftTask,
+    moveDraftItem,
     saveMemberModalAndClose,
-    handleItemDrop, copyItemToAdjacentWeek,
+    handleItemDrop,
+    copyItemToAdjacentWeek,
     clearCurrentWeek,
-    onImportOwnerChange, onImportSourceYearChange, onImportSourceWeekChange,
+    onImportOwnerChange,
+    onImportSourceYearChange,
+    onImportSourceWeekChange,
     copySelectedMemberWeek,
     exportExcel,
-    showToast
+    showToast,
   };
 }

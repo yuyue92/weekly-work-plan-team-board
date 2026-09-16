@@ -3,42 +3,42 @@ import { useAuth } from "../composables/useAuth.js";
 
 const routes = [
   {
-    path:      "/login",
-    name:      "Login",
+    path: "/login",
+    name: "Login",
     component: () => import("../pages/LoginPage.vue"),
-    meta:      { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
-    path:      "/reset-password",
-    name:      "ResetPassword",
+    path: "/reset-password",
+    name: "ResetPassword",
     component: () => import("../pages/LoginPage.vue"),
-    meta:      { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
-    path:      "/",
-    name:      "Board",
+    path: "/",
+    name: "Board",
     component: () => import("../pages/BoardPage.vue"),
-    meta:      { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
-    path:      "/admin",
-    name:      "Admin",
+    path: "/admin",
+    name: "Admin",
     component: () => import("../pages/AdminPage.vue"),
-    meta:      { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
-    path:      "/admin/summary",
-    name:      "AdminSummary",
+    path: "/admin/summary",
+    name: "AdminSummary",
     component: () => import("../pages/SummaryPage.vue"),
-    meta:      { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   // 兜底：未知路由重定向首页
-  { path: "/:pathMatch(.*)*", redirect: "/" }
+  { path: "/:pathMatch(.*)*", redirect: "/" },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 });
 
 router.beforeEach(async (to) => {
@@ -48,8 +48,8 @@ router.beforeEach(async (to) => {
   await whenReady();
 
   if (to.meta.requiresAuth && !isLoggedIn.value) return { name: "Login" };
-  if (to.name === "Login" && isLoggedIn.value)   return { name: "Board" };
-  if (to.meta.requiresAdmin && !isAdmin.value)   return { name: "Board" };
+  if (to.name === "Login" && isLoggedIn.value) return { name: "Board" };
+  if (to.meta.requiresAdmin && !isAdmin.value) return { name: "Board" };
 });
 
 export default router;

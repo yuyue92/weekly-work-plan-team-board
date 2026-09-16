@@ -14,7 +14,7 @@
 
     <template v-else>
       <!-- 所有已注册用户 -->
-      <section class="card" style="margin-bottom:16px;">
+      <section class="card" style="margin-bottom: 16px">
         <div class="card-body">
           <h2 class="section-title">Registered Users</h2>
           <p class="section-hint">All registered @pccw.com accounts are listed below. Assign each one to a team.</p>
@@ -39,30 +39,19 @@
                   <td>{{ user.email }}</td>
                   <td class="col-width-100">
                     <span class="badge badge-role" :class="user.role === 'admin' ? 'badge-admin' : 'badge-staff'">
-                      {{ user.role === 'admin' ? 'Admin' : 'Staff' }}
+                      {{ user.role === "admin" ? "Admin" : "Staff" }}
                     </span>
                   </td>
                   <td class="col-width-100">
                     <span class="badge" :class="user.is_disabled ? 'badge-is_disabled' : 'badge-is_enabled'">
-                      {{ user.is_disabled ? 'Disabled' : 'Active' }}
+                      {{ user.is_disabled ? "Disabled" : "Active" }}
                     </span>
                   </td>
                   <td>
-                    <span
-                      v-if="getUserTeams(user.id).length"
-                      class="team-tags"
-                    >
-                      <span
-                        v-for="team in getUserTeams(user.id)"
-                        :key="team.id"
-                        class="tag"
-                      >
+                    <span v-if="getUserTeams(user.id).length" class="team-tags">
+                      <span v-for="team in getUserTeams(user.id)" :key="team.id" class="tag">
                         {{ team.name }}
-                        <button
-                          class="tag-remove"
-                          title="Remove"
-                          @click="removeMember(user.id, team.id)"
-                        >×</button>
+                        <button class="tag-remove" title="Remove" @click="removeMember(user.id, team.id)">×</button>
                       </span>
                     </span>
                     <span v-else class="text-muted">Unassigned</span>
@@ -71,17 +60,17 @@
                     <div class="assign-row">
                       <select class="form-select form-select-sm" v-model="assignTarget[user.id]">
                         <option value="">Select Team…</option>
-                        <option
-                          v-for="team in getAssignableTeams(user.id)"
-                          :key="team.id"
-                          :value="team.id"
-                        >{{ team.name }}</option>
+                        <option v-for="team in getAssignableTeams(user.id)" :key="team.id" :value="team.id">
+                          {{ team.name }}
+                        </option>
                       </select>
                       <button
                         class="btn btn-primary btn-sm"
                         :disabled="!assignTarget[user.id]"
                         @click="addMember(user.id)"
-                      >Join</button>
+                      >
+                        Join
+                      </button>
                     </div>
                   </td>
                   <td>
@@ -90,20 +79,22 @@
                       class="btn btn-outline-danger btn-sm"
                       :disabled="togglingUserId === user.id"
                       @click="disableUser(user)"
-                    >{{ togglingUserId === user.id ? "Processing..." : "Disable (Clear Data)" }}</button>
+                    >
+                      {{ togglingUserId === user.id ? "Processing..." : "Disable (Clear Data)" }}
+                    </button>
                     <button
                       v-else-if="user.id !== currentUser.id && user.is_disabled"
                       class="btn btn-outline-primary btn-sm"
                       :disabled="togglingUserId === user.id"
                       @click="enableUser(user)"
-                    >{{ togglingUserId === user.id ? "Processing..." : "Enable" }}</button>
-                    <span v-else class="text-muted" style="font-size:12px;">Current Account</span>
+                    >
+                      {{ togglingUserId === user.id ? "Processing..." : "Enable" }}
+                    </button>
+                    <span v-else class="text-muted" style="font-size: 12px">Current Account</span>
                   </td>
                 </tr>
                 <tr v-if="!allProfiles.length">
-                  <td colspan="8" style="text-align:center;color:#94a3b8;padding:18px;">
-                    No registered users
-                  </td>
+                  <td colspan="8" style="text-align: center; color: #94a3b8; padding: 18px">No registered users</td>
                 </tr>
               </tbody>
             </table>
@@ -123,19 +114,21 @@
                   {{ getProfile(m.user_id)?.display_name || m.user_id }}
                 </span>
               </div>
-              <div v-else class="text-muted" style="font-size:13px;">No members</div>
+              <div v-else class="text-muted" style="font-size: 13px">No members</div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Teams 管理 -->
-      <section class="card" style="margin-bottom:16px;">
+      <section class="card" style="margin-bottom: 16px">
         <div class="card-body">
           <div class="section-header-row">
             <div>
               <h2 class="section-title">Teams</h2>
-              <p class="section-hint">Create, rename, or delete teams. A team must have no members before it can be deleted.</p>
+              <p class="section-hint">
+                Create, rename, or delete teams. A team must have no members before it can be deleted.
+              </p>
             </div>
             <div class="header-inline-form">
               <input
@@ -145,7 +138,11 @@
                 :disabled="creatingTeam"
                 @keyup.enter="createTeam"
               />
-              <button class="btn btn-primary btn-sm" :disabled="creatingTeam || !newTeamName.trim()" @click="createTeam">
+              <button
+                class="btn btn-primary btn-sm"
+                :disabled="creatingTeam || !newTeamName.trim()"
+                @click="createTeam"
+              >
                 {{ creatingTeam ? "Creating..." : "+ Add Team" }}
               </button>
             </div>
@@ -178,10 +175,16 @@
                   <td>{{ (team.created_at || "").slice(0, 10) }}</td>
                   <td class="action-btnlist">
                     <template v-if="editingTeamId === team.id">
-                      <button class="btn btn-primary btn-sm" :disabled="savingTeamId === team.id" @click="saveTeamName(team)">
+                      <button
+                        class="btn btn-primary btn-sm"
+                        :disabled="savingTeamId === team.id"
+                        @click="saveTeamName(team)"
+                      >
                         {{ savingTeamId === team.id ? "Saving..." : "Save" }}
                       </button>
-                      <button class="btn btn-light btn-sm" :disabled="savingTeamId === team.id" @click="cancelEditTeam">Cancel</button>
+                      <button class="btn btn-light btn-sm" :disabled="savingTeamId === team.id" @click="cancelEditTeam">
+                        Cancel
+                      </button>
                     </template>
                     <template v-else>
                       <button class="btn btn-light btn-sm" @click="startEditTeam(team)">Rename</button>
@@ -189,17 +192,18 @@
                         class="btn btn-outline-danger btn-sm"
                         :disabled="deletingTeamId === team.id"
                         @click="deleteTeam(team)"
-                      >{{ deletingTeamId === team.id ? "Deleting..." : "Delete" }}</button>
+                      >
+                        {{ deletingTeamId === team.id ? "Deleting..." : "Delete" }}
+                      </button>
                     </template>
                   </td>
                 </tr>
                 <tr v-if="!allTeams.length">
-                  <td colspan="4" style="text-align:center;color:#94a3b8;padding:18px;">No teams yet</td>
+                  <td colspan="4" style="text-align: center; color: #94a3b8; padding: 18px">No teams yet</td>
                 </tr>
               </tbody>
             </table>
           </div>
-
         </div>
       </section>
 
@@ -227,7 +231,6 @@
           input-type="number"
         />
       </div>
-
     </template>
 
     <!-- Toast -->
@@ -244,34 +247,39 @@ import ListOptionsManager from "../components/ListOptionsManager.vue";
 
 const { currentUser } = useAuth();
 
-const loading      = ref(true);
-const allProfiles  = ref([]);   // public.profiles 全部
-const allTeams     = ref([]);   // public.teams 全部
-const teamUsers    = ref([]);   // public.team_users 全部 { team_id, user_id }
+const loading = ref(true);
+const allProfiles = ref([]); // public.profiles 全部
+const allTeams = ref([]); // public.teams 全部
+const teamUsers = ref([]); // public.team_users 全部 { team_id, user_id }
 
 const togglingUserId = ref("");
 // 每个用户待分配的 team 选择（user_id -> team_id）
 const assignTarget = reactive({});
 
 // Team 增删改
-const newTeamName    = ref("");
-const creatingTeam   = ref(false);
-const editingTeamId  = ref("");
+const newTeamName = ref("");
+const creatingTeam = ref(false);
+const editingTeamId = ref("");
 const editingTeamName = ref("");
-const savingTeamId   = ref("");
+const savingTeamId = ref("");
 const deletingTeamId = ref("");
 
-const toastMsg     = ref("");
-const toastType    = ref("info"); // success | error | info
+const toastMsg = ref("");
+const toastType = ref("info"); // success | error | info
 const toastVisible = ref(false);
-let toastTimer     = null;
+let toastTimer = null;
 
 function showToast(msg, type = "info") {
-  toastMsg.value     = msg;
-  toastType.value    = type;
+  toastMsg.value = msg;
+  toastType.value = type;
   toastVisible.value = true;
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toastVisible.value = false; }, type === "error" ? 3200 : 1800);
+  toastTimer = setTimeout(
+    () => {
+      toastVisible.value = false;
+    },
+    type === "error" ? 3200 : 1800
+  );
 }
 
 // ── 数据加载 ─────────────────────────────────────────
@@ -280,44 +288,43 @@ async function loadAll() {
   const [profilesRes, teamsRes, teamUsersRes] = await Promise.all([
     supabase.from("profiles").select("*").order("display_name"),
     supabase.from("teams").select("*").order("name"),
-    supabase.from("team_users").select("team_id, user_id")
+    supabase.from("team_users").select("team_id, user_id"),
   ]);
   allProfiles.value = profilesRes.data || [];
-  allTeams.value    = teamsRes.data    || [];
-  teamUsers.value   = teamUsersRes.data || [];
-  loading.value     = false;
+  allTeams.value = teamsRes.data || [];
+  teamUsers.value = teamUsersRes.data || [];
+  loading.value = false;
 }
 
 // ── 工具函数 ──────────────────────────────────────────
 function getProfile(userId) {
-  return allProfiles.value.find(p => p.id === userId);
+  return allProfiles.value.find((p) => p.id === userId);
 }
 
 function getUserTeams(userId) {
-  const teamIds = teamUsers.value
-    .filter(tu => tu.user_id === userId)
-    .map(tu => tu.team_id);
-  return allTeams.value.filter(t => teamIds.includes(t.id));
+  const teamIds = teamUsers.value.filter((tu) => tu.user_id === userId).map((tu) => tu.team_id);
+  return allTeams.value.filter((t) => teamIds.includes(t.id));
 }
 
 function getTeamMembers(teamId) {
-  return teamUsers.value.filter(tu => tu.team_id === teamId);
+  return teamUsers.value.filter((tu) => tu.team_id === teamId);
 }
 
 // 该用户还未加入的 team
 function getAssignableTeams(userId) {
-  const joined = getUserTeams(userId).map(t => t.id);
-  return allTeams.value.filter(t => !joined.includes(t.id));
+  const joined = getUserTeams(userId).map((t) => t.id);
+  return allTeams.value.filter((t) => !joined.includes(t.id));
 }
 
 // ── 加入 Team ─────────────────────────────────────────
 async function addMember(userId) {
   const teamId = assignTarget[userId];
   if (!teamId) return;
-  const { error } = await supabase
-    .from("team_users")
-    .insert({ team_id: teamId, user_id: userId });
-  if (error) { showToast("Operation failed:" + error.message, "error"); return; }
+  const { error } = await supabase.from("team_users").insert({ team_id: teamId, user_id: userId });
+  if (error) {
+    showToast("Operation failed:" + error.message, "error");
+    return;
+  }
   assignTarget[userId] = "";
   await loadAll();
   showToast("Joined Team", "success");
@@ -326,14 +333,13 @@ async function addMember(userId) {
 // ── 移除 Team ─────────────────────────────────────────
 async function removeMember(userId, teamId) {
   const profile = getProfile(userId);
-  const team    = allTeams.value.find(t => t.id === teamId);
+  const team = allTeams.value.find((t) => t.id === teamId);
   if (!confirm(`确定将「${profile?.display_name}」从「${team?.name}」移除吗？`)) return;
-  const { error } = await supabase
-    .from("team_users")
-    .delete()
-    .eq("team_id", teamId)
-    .eq("user_id", userId);
-  if (error) { showToast("Operation failed:" + error.message, "error"); return; }
+  const { error } = await supabase.from("team_users").delete().eq("team_id", teamId).eq("user_id", userId);
+  if (error) {
+    showToast("Operation failed:" + error.message, "error");
+    return;
+  }
   await loadAll();
   showToast("Removed!", "success");
 }
@@ -342,7 +348,7 @@ async function removeMember(userId, teamId) {
 async function createTeam() {
   const name = newTeamName.value.trim();
   if (!name) return;
-  if (allTeams.value.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+  if (allTeams.value.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
     showToast("A team with this name already exists", "info");
     return;
   }
@@ -363,20 +369,26 @@ async function createTeam() {
 
 // ── 改名 Team ─────────────────────────────────────────
 function startEditTeam(team) {
-  editingTeamId.value   = team.id;
+  editingTeamId.value = team.id;
   editingTeamName.value = team.name;
 }
 
 function cancelEditTeam() {
-  editingTeamId.value   = "";
+  editingTeamId.value = "";
   editingTeamName.value = "";
 }
 
 async function saveTeamName(team) {
   const name = editingTeamName.value.trim();
-  if (!name) { showToast("Team name can't be empty", "info"); return; }
-  if (name === team.name) { cancelEditTeam(); return; }
-  if (allTeams.value.some(t => t.id !== team.id && t.name.toLowerCase() === name.toLowerCase())) {
+  if (!name) {
+    showToast("Team name can't be empty", "info");
+    return;
+  }
+  if (name === team.name) {
+    cancelEditTeam();
+    return;
+  }
+  if (allTeams.value.some((t) => t.id !== team.id && t.name.toLowerCase() === name.toLowerCase())) {
     showToast("A team with this name already exists", "info");
     return;
   }
@@ -408,7 +420,10 @@ async function deleteTeam(team) {
     .from("work_items")
     .select("id", { count: "exact", head: true })
     .eq("team_id", team.id);
-  if (countErr) { showToast("Failed to check team data: " + countErr.message, "error"); return; }
+  if (countErr) {
+    showToast("Failed to check team data: " + countErr.message, "error");
+    return;
+  }
 
   const confirmText = count
     ? `Team "${team.name}" still has ${count} historical Work Item(s). Deleting the team may also delete this data (depending on database constraints). Continue?`
@@ -426,7 +441,8 @@ async function deleteTeam(team) {
     showToast(
       isFkViolation
         ? "This team still has related data (e.g. work items) preventing deletion."
-        : "Delete failed: " + (err.message || String(err)), "error"
+        : "Delete failed: " + (err.message || String(err)),
+      "error"
     );
   } finally {
     deletingTeamId.value = "";

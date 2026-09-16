@@ -1,21 +1,13 @@
 <template>
-  <div
-    class="weekly-report-editor"
-    :class="{ 'is-readonly': !editable }"
-  >
+  <div class="weekly-report-editor" :class="{ 'is-readonly': !editable }">
     <textarea
       v-model="draft"
       class="form-control weekly-report-textarea"
       :readonly="!editable"
-      :placeholder="
-        editable
-          ? 'Enter weekly report...'
-          : 'No weekly report'
-      "
+      :placeholder="editable ? 'Enter weekly report...' : 'No weekly report'"
     ></textarea>
 
     <div class="weekly-report-actions">
-
       <button
         type="button"
         class="btn btn-outline-secondary btn-sm weekly-report-copy-btn"
@@ -38,8 +30,26 @@
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
-          <rect x="3.2" y="3.2" width="10.6" height="10.6" rx="2" stroke="currentColor" stroke-width="1.4" opacity="0.55" />
-          <rect x="6.2" y="6.2" width="10.6" height="10.6" rx="2" fill="#fff" stroke="currentColor" stroke-width="1.4" />
+          <rect
+            x="3.2"
+            y="3.2"
+            width="10.6"
+            height="10.6"
+            rx="2"
+            stroke="currentColor"
+            stroke-width="1.4"
+            opacity="0.55"
+          />
+          <rect
+            x="6.2"
+            y="6.2"
+            width="10.6"
+            height="10.6"
+            rx="2"
+            fill="#fff"
+            stroke="currentColor"
+            stroke-width="1.4"
+          />
         </svg>
         <svg
           v-else
@@ -49,7 +59,13 @@
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
-          <path d="M4.5 10.5L8.2 14L15.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          <path
+            d="M4.5 10.5L8.2 14L15.5 6"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
       </button>
       <template v-if="editable">
@@ -70,7 +86,7 @@
           @click="submitReport"
         >
           {{ saving ? "Submitting..." : "Save" }}
-        </button>        
+        </button>
       </template>
     </div>
   </div>
@@ -83,33 +99,33 @@ import { totalWeeklyHours } from "../utils/model.js";
 const props = defineProps({
   reportText: {
     type: String,
-    default: ""
+    default: "",
   },
 
   editable: {
     type: Boolean,
-    default: false
+    default: false,
   },
 
   saving: {
     type: Boolean,
-    default: false
+    default: false,
   },
 
   pendingItems: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
 
   processingItems: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
 
   doneItems: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["submit"]);
@@ -118,7 +134,7 @@ const draft = ref(props.reportText || "");
 
 watch(
   () => props.reportText,
-  value => {
+  (value) => {
     draft.value = value || "";
   }
 );
@@ -141,7 +157,11 @@ async function copyPlainText(text) {
     document.body.appendChild(ta);
     ta.select();
     let ok = false;
-    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    try {
+      ok = document.execCommand("copy");
+    } catch (err) {
+      ok = false;
+    }
     document.body.removeChild(ta);
     return ok;
   }
@@ -155,7 +175,9 @@ async function copyReport() {
 
   clearTimeout(copyStateTimer);
   copyState.value = ok ? "success" : "error";
-  copyStateTimer = setTimeout(() => { copyState.value = "idle"; }, 1400);
+  copyStateTimer = setTimeout(() => {
+    copyState.value = "idle";
+  }, 1400);
 }
 
 /**
@@ -172,9 +194,7 @@ function getItemText(item) {
   const project = String(item?.project_name || "").trim();
   if (project) return project;
 
-  const taskName = (item?.tasks || [])
-    .map(task => String(task?.task_name || "").trim())
-    .find(Boolean);
+  const taskName = (item?.tasks || []).map((task) => String(task?.task_name || "").trim()).find(Boolean);
 
   if (taskName) return taskName;
 
@@ -186,16 +206,11 @@ function getItemReportLine(item) {
   return `${getItemText(item)} (${hours}h)`;
 }
 
-
 function buildSection(label, items) {
   if (!items?.length) return "";
 
-  return [
-    label,
-    ...items.map(item => `  • ${getItemReportLine(item)}`)
-  ].join("\n");
+  return [label, ...items.map((item) => `  • ${getItemReportLine(item)}`)].join("\n");
 }
-
 
 /**
  * 固定顺序：
@@ -207,12 +222,11 @@ function buildImportedText() {
   return [
     buildSection("Pending", props.pendingItems),
     buildSection("Processing", props.processingItems),
-    buildSection("Done", props.doneItems)
+    buildSection("Done", props.doneItems),
   ]
     .filter(Boolean)
     .join("\n\n");
 }
-
 
 function importItems() {
   if (!props.editable || props.saving) return;
@@ -230,9 +244,9 @@ function importItems() {
   if (draft.value.trim()) {
     const confirmed = confirm(
       "Weekly Report already contains content.\n\n" +
-      "Importing the current Pending / Processing / Done items " +
-      "will overwrite the existing text.\n\n" +
-      "Continue?"
+        "Importing the current Pending / Processing / Done items " +
+        "will overwrite the existing text.\n\n" +
+        "Continue?"
     );
 
     if (!confirmed) return;
@@ -240,7 +254,6 @@ function importItems() {
 
   draft.value = importedText;
 }
-
 
 function submitReport() {
   if (!props.editable || props.saving) return;

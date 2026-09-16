@@ -7,7 +7,8 @@
         <div class="session-warning-title">Your session is about to expire</div>
         <div class="session-warning-desc">
           You've been inactive for a while. You'll be signed out automatically in
-          <b>{{ sessionRemainingText }}</b>.
+          <b>{{ sessionRemainingText }}</b
+          >.
         </div>
         <div class="session-warning-actions">
           <button class="btn btn-primary btn-sm" type="button" @click="continueSession">Continue Session</button>
@@ -34,7 +35,7 @@ const sessionRemainingText = computed(() => {
 
 // 统一处理所有登出场景：
 // 手动退出、倒计时归零、绝对会话过期、其他标签页退出
-watch(isLoggedIn, loggedIn => {
+watch(isLoggedIn, (loggedIn) => {
   if (!loggedIn && router.currentRoute.value.name !== "Login") {
     router.replace({ name: "Login" });
   }

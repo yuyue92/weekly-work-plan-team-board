@@ -1,4 +1,4 @@
-const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function startOfWeekMonday(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -23,7 +23,7 @@ export function formatDate(date) {
 }
 
 export function formatTimestampForFile(date) {
-  return `${date.getFullYear()}${pad2(date.getMonth()+1)}${pad2(date.getDate())}_${pad2(date.getHours())}${pad2(date.getMinutes())}${pad2(date.getSeconds())}`;
+  return `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}_${pad2(date.getHours())}${pad2(date.getMinutes())}${pad2(date.getSeconds())}`;
 }
 
 export function pad2(v) {
@@ -39,7 +39,7 @@ export function formatMonthDayLabel(dateString) {
 
 export function buildWorkWeeks(year) {
   const firstDay = new Date(year, 0, 1);
-  const lastDay  = new Date(year, 11, 31);
+  const lastDay = new Date(year, 11, 31);
   let start = startOfWeekMonday(firstDay);
   const weeks = [];
   let weekNo = 1;
@@ -49,9 +49,9 @@ export function buildWorkWeeks(year) {
       key: `${year}-W${pad2(weekNo)}`,
       weekNo,
       startDate: days[0],
-      endDate:   days[4],
+      endDate: days[4],
       days,
-      label: `week ${weekNo} ${days[0]} ~ ${days[4]}`
+      label: `week ${weekNo} ${days[0]} ~ ${days[4]}`,
     });
     start = addDays(start, 7);
     weekNo++;
@@ -63,7 +63,7 @@ export function getDefaultWeekKey(year, weekOptions) {
   const today = new Date();
   if (today.getFullYear() !== Number(year)) return weekOptions[0]?.key || "";
   const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const match = weekOptions.find(w => {
+  const match = weekOptions.find((w) => {
     const mon = parseDate(w.startDate);
     const sun = addDays(mon, 6);
     return todayOnly >= mon && todayOnly <= sun;

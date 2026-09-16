@@ -8,10 +8,14 @@
       <div class="header-right">
         <span class="badge">{{ currentUser.displayName || currentUser.email }}</span>
         <span class="badge badge-role" :class="isAdmin ? 'badge-admin' : 'badge-staff'">
-          {{ isAdmin ? 'Admin' : 'Staff' }}
+          {{ isAdmin ? "Admin" : "Staff" }}
         </span>
-        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin')">Admin Settings</button>
-        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin/summary')">Summary Report</button>
+        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin')">
+          Admin Settings
+        </button>
+        <button v-if="isAdmin" class="btn btn-outline-primary btn-sm" @click="$router.push('/admin/summary')">
+          Summary Report
+        </button>
         <button class="btn btn-light btn-sm" @click="doSignOut">Sign Out</button>
       </div>
     </header>
@@ -98,45 +102,72 @@
 <script setup>
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import AppToolbar  from "../components/AppToolbar.vue";
-import BoardTable  from "../components/BoardTable.vue";
+import AppToolbar from "../components/AppToolbar.vue";
+import BoardTable from "../components/BoardTable.vue";
 import MemberItemModal from "../components/MemberItemModal.vue";
 import LoadingOverlay from "../components/LoadingOverlay.vue";
 
 import ToastMessage from "../components/ToastMessage.vue";
-import { useAuth }        from "../composables/useAuth.js";
-import { useBoardStore }  from "../composables/useBoardStore.js";
+import { useAuth } from "../composables/useAuth.js";
+import { useBoardStore } from "../composables/useBoardStore.js";
 import { STATUS_LABELS, HOUR_KEYS, WEEKDAY_LABELS } from "../constants/index.js";
 
 const router = useRouter();
 const { currentUser, isAdmin, signOut } = useAuth();
 
 const {
-  state, weekOptions, teamsData, currentMembers,
-  boardLoading, noTeamMessage,
+  state,
+  weekOptions,
+  teamsData,
+  currentMembers,
+  boardLoading,
+  noTeamMessage,
   weeklyReports,
   weeklyReportSavingIds,
-  toastMessage, toastType, toastVisible,
-  projectNames, priorities, hourOptions,
-  memberModalOpen, memberModalContext, memberModalDraft, memberModalSaveHint, memberModalSaving,
-  importState, importWeekOptions, importSaving,
-  boardTitle, startDateDisplay, endDateDisplay, currentWeekDays,
-  copyingItemIds, copyItemToAdjacentWeek,
+  toastMessage,
+  toastType,
+  toastVisible,
+  projectNames,
+  priorities,
+  hourOptions,
+  memberModalOpen,
+  memberModalContext,
+  memberModalDraft,
+  memberModalSaveHint,
+  memberModalSaving,
+  importState,
+  importWeekOptions,
+  importSaving,
+  boardTitle,
+  startDateDisplay,
+  endDateDisplay,
+  currentWeekDays,
+  copyingItemIds,
+  copyItemToAdjacentWeek,
   init,
-  onTeamChange, onYearChange, onWeekChange,
+  onTeamChange,
+  onYearChange,
+  onWeekChange,
   getMemberItems,
   getWeeklyReport,
   saveWeeklyReport,
   moveMemberUp,
-  openMemberModal, closeMemberModal, markMemberModalDirty,
-  addDraftItem, deleteDraftItem, addDraftTask, deleteDraftTask, moveDraftItem,
+  openMemberModal,
+  closeMemberModal,
+  markMemberModalDirty,
+  addDraftItem,
+  deleteDraftItem,
+  addDraftTask,
+  deleteDraftTask,
+  moveDraftItem,
   saveMemberModalAndClose,
-  handleItemDrop, clearCurrentWeek,
+  handleItemDrop,
+  clearCurrentWeek,
   onImportOwnerChange,
   onImportSourceYearChange,
   onImportSourceWeekChange,
   copySelectedMemberWeek,
-  exportExcel
+  exportExcel,
 } = useBoardStore();
 
 async function doSignOut() {
@@ -144,8 +175,10 @@ async function doSignOut() {
   router.push({ name: "Login" });
 }
 
-onMounted(() => init({
-  userId: currentUser.value.id,
-  isAdmin: isAdmin.value
-}));
+onMounted(() =>
+  init({
+    userId: currentUser.value.id,
+    isAdmin: isAdmin.value,
+  })
+);
 </script>

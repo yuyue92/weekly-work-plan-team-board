@@ -6,7 +6,9 @@
         <p class="app-subtitle">Compiled from each member's Weekly Report, ready to export for management</p>
       </div>
       <div class="header-right">
-        <button class="btn btn-outline-primary btn-sm" :disabled="!summaryLoaded" @click="doPrint">Export PDF (Print)</button>
+        <button class="btn btn-outline-primary btn-sm" :disabled="!summaryLoaded" @click="doPrint">
+          Export PDF (Print)
+        </button>
         <button class="btn btn-light btn-sm" @click="$router.push('/')">← Back to Board</button>
       </div>
     </header>
@@ -22,7 +24,14 @@
           </div>
           <div class="form-group year-group">
             <label>Year</label>
-            <input class="form-control" type="number" min="2000" max="2100" :value="state.year" @change="onYearChange($event.target.value)" />
+            <input
+              class="form-control"
+              type="number"
+              min="2000"
+              max="2100"
+              :value="state.year"
+              @change="onYearChange($event.target.value)"
+            />
           </div>
           <div class="form-group week-group">
             <label>Week</label>
@@ -33,7 +42,10 @@
                 title="Previous Week"
                 aria-label="Switch to previous week"
                 :disabled="!canGoPreviousWeek"
-                @click="switchWeek(-1)">‹</button>
+                @click="switchWeek(-1)"
+              >
+                ‹
+              </button>
               <select class="form-select" :value="state.weekKey" @change="onWeekChange($event.target.value)">
                 <option v-for="week in weekOptions" :key="week.key" :value="week.key">{{ week.label }}</option>
               </select>
@@ -43,7 +55,10 @@
                 title="Next Week"
                 aria-label="Switch to next week"
                 :disabled="!canGoNextWeek"
-                @click="switchWeek(1)">›</button>
+                @click="switchWeek(1)"
+              >
+                ›
+              </button>
             </div>
           </div>
         </div>
@@ -67,7 +82,7 @@
               <span class="member-name">{{ member.displayName }}</span>
               <button class="btn btn-light btn-sm" @click="insertMember(member)">Insert into Summary</button>
             </div>
-            <pre class="source-member-text">{{ member.reportText || '(No Weekly Report submitted)' }}</pre>
+            <pre class="source-member-text">{{ member.reportText || "(No Weekly Report submitted)" }}</pre>
           </div>
         </div>
       </section>
@@ -103,8 +118,26 @@
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
               >
-                <rect x="3.2" y="3.2" width="10.6" height="10.6" rx="2" stroke="currentColor" stroke-width="1.4" opacity="0.55" />
-                <rect x="6.2" y="6.2" width="10.6" height="10.6" rx="2" fill="#fff" stroke="currentColor" stroke-width="1.4" />
+                <rect
+                  x="3.2"
+                  y="3.2"
+                  width="10.6"
+                  height="10.6"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  opacity="0.55"
+                />
+                <rect
+                  x="6.2"
+                  y="6.2"
+                  width="10.6"
+                  height="10.6"
+                  rx="2"
+                  fill="#fff"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                />
               </svg>
               <svg
                 v-else
@@ -114,7 +147,13 @@
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
               >
-                <path d="M4.5 10.5L8.2 14L15.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                <path
+                  d="M4.5 10.5L8.2 14L15.5 6"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </button>
             <button class="btn btn-primary btn-sm" :disabled="summarySaving" @click="doSave">
@@ -152,29 +191,35 @@ import ToastMessage from "../components/ToastMessage.vue";
 
 const { currentUser } = useAuth();
 const {
-  state, teamsData, weekOptions, members, loading,
-  summaryRecord, summarySaving,
-  initTeams, onTeamChange, onYearChange, onWeekChange,
-  saveSummary, weekLabel
+  state,
+  teamsData,
+  weekOptions,
+  members,
+  loading,
+  summaryRecord,
+  summarySaving,
+  initTeams,
+  onTeamChange,
+  onYearChange,
+  onWeekChange,
+  saveSummary,
+  weekLabel,
 } = useWeeklySummary();
 
 // ── 上一周 / 下一周 切换（逻辑与 AppToolbar.vue 保持一致）──
-const selectedWeekIndex = computed(() =>
-  weekOptions.value.findIndex(week => week.key === state.weekKey)
-);
+const selectedWeekIndex = computed(() => weekOptions.value.findIndex((week) => week.key === state.weekKey));
 const canGoPreviousWeek = computed(() => selectedWeekIndex.value > 0);
-const canGoNextWeek = computed(() =>
-  selectedWeekIndex.value >= 0 &&
-  selectedWeekIndex.value < weekOptions.value.length - 1
+const canGoNextWeek = computed(
+  () => selectedWeekIndex.value >= 0 && selectedWeekIndex.value < weekOptions.value.length - 1
 );
 function switchWeek(offset) {
   const targetWeek = weekOptions.value[selectedWeekIndex.value + offset];
   if (targetWeek) onWeekChange(targetWeek.key);
 }
 
-const editorRef  = ref(null);
-const draftHtml  = ref("");
-const saveHint   = ref("");
+const editorRef = ref(null);
+const draftHtml = ref("");
+const saveHint = ref("");
 const summaryLoaded = computed(() => !loading.value);
 
 // ── 快捷复制（Summary Editor 内容，HTML 转纯文本后复制）──
@@ -185,7 +230,7 @@ function htmlToPlainText(html) {
   const container = document.createElement("div");
   container.innerHTML = String(html || "");
   // p / h2 / h3 / li 等块级标签结束后补一个换行，避免所有文字挤在一行
-  container.querySelectorAll("p, h1, h2, h3, h4, li, br").forEach(el => {
+  container.querySelectorAll("p, h1, h2, h3, h4, li, br").forEach((el) => {
     el.insertAdjacentText("afterend", "\n");
   });
   return (container.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
@@ -205,7 +250,11 @@ async function copyPlainText(text) {
     document.body.appendChild(ta);
     ta.select();
     let ok = false;
-    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    try {
+      ok = document.execCommand("copy");
+    } catch (err) {
+      ok = false;
+    }
     document.body.removeChild(ta);
     return ok;
   }
@@ -218,43 +267,68 @@ async function copySummary() {
   const ok = await copyPlainText(text);
   clearTimeout(copyStateTimer);
   copyState.value = ok ? "success" : "error";
-  copyStateTimer = setTimeout(() => { copyState.value = "idle"; }, 1400);
+  copyStateTimer = setTimeout(() => {
+    copyState.value = "idle";
+  }, 1400);
 }
 
-const toastMsg = ref(""), toastType = ref("info"), toastVisible = ref(false);
+const toastMsg = ref(""),
+  toastType = ref("info"),
+  toastVisible = ref(false);
 let toastTimer = null;
 function showToast(msg, type = "info") {
-  toastMsg.value = msg; toastType.value = type; toastVisible.value = true;
+  toastMsg.value = msg;
+  toastType.value = type;
+  toastVisible.value = true;
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toastVisible.value = false; }, type === "error" ? 3200 : 1800);
+  toastTimer = setTimeout(
+    () => {
+      toastVisible.value = false;
+    },
+    type === "error" ? 3200 : 1800
+  );
 }
 
 const exportedAtText = computed(() => {
   const now = new Date();
-  return `${formatDate(now)} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+  return `${formatDate(now)} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 });
 
-watch(summaryRecord, (record) => {
-  draftHtml.value = record?.content_html || "";
-  saveHint.value = record?.updated_at
-    ? `Saved · ${String(record.updated_at).slice(0, 16).replace("T", " ")}`
-    : "Not saved ye";
-}, { immediate: true });
+watch(
+  summaryRecord,
+  (record) => {
+    draftHtml.value = record?.content_html || "";
+    saveHint.value = record?.updated_at
+      ? `Saved · ${String(record.updated_at).slice(0, 16).replace("T", " ")}`
+      : "Not saved ye";
+  },
+  { immediate: true }
+);
 
-function onDraftChange() { saveHint.value = "Unsaved changes"; }
+function onDraftChange() {
+  saveHint.value = "Unsaved changes";
+}
 
 function reportToHtml(member) {
-  const lines = String(member.reportText || "").split("\n").filter(Boolean);
+  const lines = String(member.reportText || "")
+    .split("\n")
+    .filter(Boolean);
   const body = lines.length
-    ? lines.map(line => `<p>${escapeHtml(line)}</p>`).join("")
+    ? lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")
     : `<p>(No Weekly Report submitted)</p>`;
   return `<h3>${escapeHtml(member.displayName)}</h3>${body}`;
 }
 function escapeHtml(text) {
-  return String(text).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  return String(text).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+  );
 }
 
-function insertMember(member) { editorRef.value?.insertHtmlAtCursor(reportToHtml(member)); onDraftChange(); }
+function insertMember(member) {
+  editorRef.value?.insertHtmlAtCursor(reportToHtml(member));
+  onDraftChange();
+}
 function insertAllMembers() {
   const html = members.value.map(reportToHtml).join("");
   editorRef.value?.insertHtmlAtCursor(html);
@@ -263,26 +337,70 @@ function insertAllMembers() {
 
 async function doSave() {
   const { error } = await saveSummary(draftHtml.value, currentUser.value.id);
-  if (error) { showToast("Save failed:" + (error.message || String(error)), "error"); return; }
+  if (error) {
+    showToast("Save failed:" + (error.message || String(error)), "error");
+    return;
+  }
   saveHint.value = "Saved · just now";
   showToast("Saved", "success");
 }
 
-function doPrint() { window.print(); }
+function doPrint() {
+  window.print();
+}
 
 onMounted(initTeams);
 </script>
 
 <style scoped>
-.summary-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; align-items: start; }
-.summary-source-header, .summary-editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.source-member-card { border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
-.source-member-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap:15px;}
-.source-member-text { white-space: pre-wrap; font-family: inherit; font-size: 13px; color: #475569; margin: 0; max-height: 160px; overflow-y: auto; }
-.summary-editor-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
-.save-status { font-size: 12px; color: #94a3b8; }
+.summary-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 16px;
+  align-items: start;
+}
+.summary-source-header,
+.summary-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.source-member-card {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.source-member-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 15px;
+}
+.source-member-text {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.summary-editor-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+.save-status {
+  font-size: 12px;
+  color: #94a3b8;
+}
 .summary-editor {
   overflow: visible;
 }
-.print-only { display: none; }
+.print-only {
+  display: none;
+}
 </style>

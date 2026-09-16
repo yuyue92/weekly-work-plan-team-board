@@ -7,37 +7,42 @@ import { ALLOWED_EMAIL_DOMAIN } from "../constants/index.js";
 // 1. 空闲 30 分钟自动退出；
 // 2. 退出前 5 分钟显示提醒；
 // 3. 绝对最长会话：8 小时（超过强制退出，重新登录）。
-const IDLE_TIMEOUT_MS         = 10 * 60 * 1000;
-const IDLE_WARNING_BEFORE_MS  = 2  * 60 * 1000;
-const ABSOLUTE_SESSION_TTL_MS = 8  * 60 * 60 * 1000;
-const ACTIVITY_THROTTLE_MS    = 15 * 1000;
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000;
+const ABSOLUTE_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const ACTIVITY_THROTTLE_MS = 15 * 1000;
 
 const SESSION_STARTED_AT_KEY = "weekly_board_session_started_at";
-const LAST_ACTIVITY_AT_KEY   = "weekly_board_last_activity_at";
+const LAST_ACTIVITY_AT_KEY = "weekly_board_last_activity_at";
 
-const session  = ref(null);   // Supabase session
-const profile  = ref(null);   // public.profiles 行
-const loading  = ref(true);   // 初始化时等待 session 恢复
+const session = ref(null); // Supabase session
+const profile = ref(null); // public.profiles 行
+const loading = ref(true); // 初始化时等待 session 恢复
 
-const sessionWarningVisible   = ref(false); // 是否显示"即将过期"提醒
-const sessionRemainingSeconds = ref(0);     // 提醒里的倒计时（秒）
+const sessionWarningVisible = ref(false); // 是否显示"即将过期"提醒
+const sessionRemainingSeconds = ref(0); // 提醒里的倒计时（秒）
 
 let authListenerRegistered = false;
-let lastAppliedToken       = null; // 记录已处理过的 access_token，避免同一个 session 被重复处理
+let lastAppliedToken = null; // 记录已处理过的 access_token，避免同一个 session 被重复处理
 
-let warningTimer   = null;
-let expiryTimer    = null;
+let warningTimer = null;
+let expiryTimer = null;
 let remainingTimer = null;
 let activityListenersBound = false;
-let lastActivityWriteAt    = 0;
-let signingOut             = false;
+let lastActivityWriteAt = 0;
+let signingOut = false;
 
 // ── 就绪 Promise：init() 完成时 resolve 一次，路由守卫直接 await 它 ──
 let readyResolve = null;
-const readyPromise = new Promise(resolve => { readyResolve = resolve; });
+const readyPromise = new Promise((resolve) => {
+  readyResolve = resolve;
+});
 function markReady() {
   loading.value = false;
-  if (readyResolve) { readyResolve(); readyResolve = null; }
+  if (readyResolve) {
+    readyResolve();
+    readyResolve = null;
+  }
 }
 
 // ── localStorage 时间戳读写 ────────────────────────────────
@@ -51,10 +56,18 @@ function writeTimestampNow(key) {
   window.localStorage.setItem(key, String(now));
   return now;
 }
-function getSessionStartedAt()    { return readTimestamp(SESSION_STARTED_AT_KEY); }
-function getLastActivityAt()      { return readTimestamp(LAST_ACTIVITY_AT_KEY); }
-function setSessionStartedAtNow() { return writeTimestampNow(SESSION_STARTED_AT_KEY); }
-function setLastActivityAtNow()   { return writeTimestampNow(LAST_ACTIVITY_AT_KEY); }
+function getSessionStartedAt() {
+  return readTimestamp(SESSION_STARTED_AT_KEY);
+}
+function getLastActivityAt() {
+  return readTimestamp(LAST_ACTIVITY_AT_KEY);
+}
+function setSessionStartedAtNow() {
+  return writeTimestampNow(SESSION_STARTED_AT_KEY);
+}
+function setLastActivityAtNow() {
+  return writeTimestampNow(LAST_ACTIVITY_AT_KEY);
+}
 function clearStoredSessionTimes() {
   window.localStorage.removeItem(SESSION_STARTED_AT_KEY);
   window.localStorage.removeItem(LAST_ACTIVITY_AT_KEY);
@@ -62,16 +75,29 @@ function clearStoredSessionTimes() {
 
 // ── 定时器管理 ────────────────────────────────────────────
 function clearSessionTimers() {
-  if (warningTimer)   { window.clearTimeout(warningTimer);   warningTimer = null; }
-  if (expiryTimer)    { window.clearTimeout(expiryTimer);    expiryTimer = null; }
-  if (remainingTimer) { window.clearInterval(remainingTimer); remainingTimer = null; }
+  if (warningTimer) {
+    window.clearTimeout(warningTimer);
+    warningTimer = null;
+  }
+  if (expiryTimer) {
+    window.clearTimeout(expiryTimer);
+    expiryTimer = null;
+  }
+  if (remainingTimer) {
+    window.clearInterval(remainingTimer);
+    remainingTimer = null;
+  }
 }
 
 function getAbsoluteExpiresAt(sessionStartedAt) {
   return sessionStartedAt + ABSOLUTE_SESSION_TTL_MS;
 }
-function isIdleExpired(lastActivityAt)       { return Date.now() - lastActivityAt >= IDLE_TIMEOUT_MS; }
-function isAbsoluteExpired(sessionStartedAt) { return Date.now() >= getAbsoluteExpiresAt(sessionStartedAt); }
+function isIdleExpired(lastActivityAt) {
+  return Date.now() - lastActivityAt >= IDLE_TIMEOUT_MS;
+}
+function isAbsoluteExpired(sessionStartedAt) {
+  return Date.now() >= getAbsoluteExpiresAt(sessionStartedAt);
+}
 
 function updateRemainingSeconds(expiresAt) {
   const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
@@ -79,7 +105,10 @@ function updateRemainingSeconds(expiresAt) {
   return remaining;
 }
 function startRemainingTicker(expiresAt) {
-  if (remainingTimer) { window.clearInterval(remainingTimer); remainingTimer = null; }
+  if (remainingTimer) {
+    window.clearInterval(remainingTimer);
+    remainingTimer = null;
+  }
   // 倒计时归零时兜底强制登出，不依赖 expiryTimer 是否按预期触发——
   // 万一 expiryTimer 中途被别的地方（比如 TOKEN_REFRESHED 触发的 scheduleSessionTimers）
   // 清掉又没有正确重排，这里作为最后一道保险，保证倒计时到 0 一定会真正登出，
@@ -87,7 +116,10 @@ function startRemainingTicker(expiresAt) {
   const tick = () => {
     const remaining = updateRemainingSeconds(expiresAt);
     if (remaining <= 0) {
-      if (remainingTimer) { window.clearInterval(remainingTimer); remainingTimer = null; }
+      if (remainingTimer) {
+        window.clearInterval(remainingTimer);
+        remainingTimer = null;
+      }
       signOut();
     }
   };
@@ -104,7 +136,10 @@ function showSessionWarning(expiresAt) {
 function hideSessionWarning() {
   sessionWarningVisible.value = false;
   sessionRemainingSeconds.value = 0;
-  if (remainingTimer) { window.clearInterval(remainingTimer); remainingTimer = null; }
+  if (remainingTimer) {
+    window.clearInterval(remainingTimer);
+    remainingTimer = null;
+  }
 }
 
 // 根据"空闲到期时间"和"绝对到期时间"里更早的那个，安排提醒定时器 + 强退定时器
@@ -113,18 +148,18 @@ function scheduleSessionTimers(sessionStartedAt, lastActivityAt) {
   hideSessionWarning();
 
   const now = Date.now();
-  const idleExpiresAt     = lastActivityAt + IDLE_TIMEOUT_MS;
+  const idleExpiresAt = lastActivityAt + IDLE_TIMEOUT_MS;
   const absoluteExpiresAt = getAbsoluteExpiresAt(sessionStartedAt);
-  const expiresAt         = Math.min(idleExpiresAt, absoluteExpiresAt);
+  const expiresAt = Math.min(idleExpiresAt, absoluteExpiresAt);
 
   if (now >= expiresAt) {
     signOut();
     return;
   }
 
-  const idleWarningAt     = idleExpiresAt - IDLE_WARNING_BEFORE_MS;
+  const idleWarningAt = idleExpiresAt - IDLE_WARNING_BEFORE_MS;
   const absoluteWarningAt = absoluteExpiresAt - IDLE_WARNING_BEFORE_MS;
-  const warningAt         = Math.min(idleWarningAt, absoluteWarningAt);
+  const warningAt = Math.min(idleWarningAt, absoluteWarningAt);
 
   if (now >= warningAt) {
     showSessionWarning(expiresAt);
@@ -170,7 +205,7 @@ function handleActivityEvent(event) {
 
 function bindActivityListeners() {
   if (activityListenersBound || typeof window === "undefined") return;
-  ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(eventName => {
+  ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach((eventName) => {
     window.addEventListener(eventName, handleActivityEvent, { passive: true });
   });
   document.addEventListener("visibilitychange", handleActivityEvent);
@@ -178,7 +213,7 @@ function bindActivityListeners() {
 }
 function unbindActivityListeners() {
   if (!activityListenersBound || typeof window === "undefined") return;
-  ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach(eventName => {
+  ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach((eventName) => {
     window.removeEventListener(eventName, handleActivityEvent);
   });
   document.removeEventListener("visibilitychange", handleActivityEvent);
@@ -224,14 +259,14 @@ async function signOut() {
 
 export function useAuth() {
   // ── 计算属性 ────────────────────────────────────
-  const isLoggedIn  = computed(() => Boolean(session.value));
-  const isAdmin     = computed(() => profile.value?.role === "admin");
+  const isLoggedIn = computed(() => Boolean(session.value));
+  const isAdmin = computed(() => profile.value?.role === "admin");
   const currentUser = computed(() => ({
-    id:           session.value?.user?.id || null,
-    email:        session.value?.user?.email || "",
-    staffId:      profile.value?.staff_id || "",
-    displayName:  profile.value?.display_name || "",
-    role:         profile.value?.role || "staff"
+    id: session.value?.user?.id || null,
+    email: session.value?.user?.email || "",
+    staffId: profile.value?.staff_id || "",
+    displayName: profile.value?.display_name || "",
+    role: profile.value?.role || "staff",
   }));
 
   function whenReady() {
@@ -241,7 +276,9 @@ export function useAuth() {
   // ── 初始化：恢复 session ──────────────────────────
   async function init() {
     loading.value = true;
-    const { data: { session: s } } = await supabase.auth.getSession();
+    const {
+      data: { session: s },
+    } = await supabase.auth.getSession();
     // 注意：这里不传 resetSession，刷新页面/重开标签页不会顺带延长"绝对 8 小时"上限，
     // 会按 localStorage 里已经记录的起始时间继续倒计时。
     await applySession(s);
@@ -277,11 +314,7 @@ export function useAuth() {
     if (s.access_token === lastAppliedToken && !options.resetSession) return;
     lastAppliedToken = s.access_token;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", s.user.id)
-      .single();
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", s.user.id).single();
 
     if (!error && data?.is_disabled) {
       // 账号已被禁用：不设置 session/profile，直接强制登出
@@ -297,7 +330,7 @@ export function useAuth() {
 
     // ── 会话超时控制：登录成功/恢复 session 后启动倒计时 ──
     let sessionStartedAt = getSessionStartedAt();
-    let lastActivityAt   = getLastActivityAt();
+    let lastActivityAt = getLastActivityAt();
 
     if (options.resetSession || !sessionStartedAt) {
       sessionStartedAt = setSessionStartedAtNow();
@@ -317,11 +350,7 @@ export function useAuth() {
 
   // ── 读取 profile ──────────────────────────────────
   async function fetchProfile(userId) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
     if (!error) profile.value = data;
   }
 
@@ -337,31 +366,31 @@ export function useAuth() {
     if (!normalizedStaffId) {
       return {
         error: {
-          message: "Staff ID is required"
-        }
+          message: "Staff ID is required",
+        },
       };
     }
 
     if (!/^[a-z0-9_-]+$/.test(normalizedStaffId)) {
       return {
         error: {
-          message: "Staff ID may only contain letters, numbers, hyphens and underscores"
-        }
+          message: "Staff ID may only contain letters, numbers, hyphens and underscores",
+        },
       };
     }
 
     if (normalizedStaffId.length > 50) {
       return {
         error: {
-          message: "Staff ID must not exceed 50 characters"
-        }
+          message: "Staff ID must not exceed 50 characters",
+        },
       };
     }
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName, staff_id: normalizedStaffId } }
+      options: { data: { display_name: displayName, staff_id: normalizedStaffId } },
     });
     return { data, error };
   }
@@ -386,7 +415,9 @@ export function useAuth() {
     if (redirectTo) options.redirectTo = redirectTo;
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(
-      String(email || "").trim().toLowerCase(),
+      String(email || "")
+        .trim()
+        .toLowerCase(),
       options
     );
     if (error) return { error };
@@ -424,6 +455,6 @@ export function useAuth() {
     continueSession,
     requestPasswordReset,
     updatePassword,
-    isPasswordRecoveryUrl
+    isPasswordRecoveryUrl,
   };
 }

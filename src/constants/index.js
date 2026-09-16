@@ -8,11 +8,10 @@ export const STORAGE_KEY = "weekly_work_plan_team_board_v3"; // 保留，用于 
 export const STATUS_KEYS = ["pending", "processing", "done"];
 
 export const STATUS_LABELS = {
-  pending:    "Pending",
+  pending: "Pending",
   processing: "Processing",
-  done:       "Done"
+  done: "Done",
 };
-
 
 export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 

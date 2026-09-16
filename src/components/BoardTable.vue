@@ -8,45 +8,31 @@
 
     <div class="card-body">
       <div class="table-responsive">
-        <table
-          class="board-table"
-          aria-label="Weekly team work board"
-        >
+        <table class="board-table" aria-label="Weekly team work board">
           <thead>
             <tr>
               <th>Member</th>
 
               <th>
-                <span class="status-pill pending">
-                  Pending
-                </span>
+                <span class="status-pill pending"> Pending </span>
               </th>
 
               <th>
-                <span class="status-pill processing">
-                  Processing
-                </span>
+                <span class="status-pill processing"> Processing </span>
               </th>
 
               <th>
-                <span class="status-pill done">
-                  Done
-                </span>
+                <span class="status-pill done"> Done </span>
               </th>
 
               <th class="weekly-report-head">
-                <span class="weekly-report-title">
-                  Weekly Report
-                </span>
+                <span class="weekly-report-title"> Weekly Report </span>
               </th>
             </tr>
           </thead>
 
           <tbody>
-            <tr
-              v-for="(member, idx) in members"
-              :key="member.userId"
-            >
+            <tr v-for="(member, idx) in members" :key="member.userId">
               <!-- Member -->
               <td class="member-cell">
                 <div class="member-cell-inner">
@@ -59,178 +45,71 @@
                     type="button"
                     class="member-move-up"
                     title="Move up"
-                    @click="$emit(
-                      'move-member-up',
-                      member.userId
-                    )"
+                    @click="$emit('move-member-up', member.userId)"
                   >
                     ↑
                   </button>
                 </div>
 
                 <button
-                  v-if="
-                    isAdmin ||
-                    member.userId === currentUserId
-                  "
+                  v-if="isAdmin || member.userId === currentUserId"
                   class="btn btn-outline-primary btn-sm member-edit-btn"
                   type="button"
-                  @click="$emit(
-                    'edit-member',
-                    member.userId
-                  )"
+                  @click="$emit('edit-member', member.userId)"
                 >
-                  <svg
-                    class="edit-icon"
-                    viewBox="0 0 20 20"
-                    width="13"
-                    height="13"
-                    aria-hidden="true"
-                  >
+                  <svg class="edit-icon" viewBox="0 0 20 20" width="13" height="13" aria-hidden="true">
                     <path
                       fill="currentColor"
                       d="M14.85 2.85a1.5 1.5 0 0 1 2.12 0l.18.18a1.5 1.5 0 0 1 0 2.12L8.4 13.9l-3 .7.7-3 8.75-8.75Z"
                     />
-                    <path
-                      fill="currentColor"
-                      d="M3 16.5h14v1.5H3z"
-                    />
+                    <path fill="currentColor" d="M3 16.5h14v1.5H3z" />
                   </svg>
 
                   <span>Edit</span>
                 </button>
               </td>
 
-
               <!-- Pending / Processing / Done -->
-              <td
-                v-for="status in STATUS_KEYS"
-                :key="status"
-                class="status-col"
-              >
+              <td v-for="status in STATUS_KEYS" :key="status" class="status-col">
                 <div
                   class="drop-zone"
                   :class="{
-                    'drag-over':
-                      dragOverKey ===
-                      member.userId + '|' + status
+                    'drag-over': dragOverKey === member.userId + '|' + status,
                   }"
-                  @dragover.prevent="
-                    onDragOver(
-                      member.userId,
-                      status
-                    )
-                  "
-                  @dragleave="
-                    onDragLeave(
-                      member.userId,
-                      status,
-                      $event
-                    )
-                  "
-                  @drop.prevent="
-                    onDrop(
-                      member.userId,
-                      status
-                    )
-                  "
+                  @dragover.prevent="onDragOver(member.userId, status)"
+                  @dragleave="onDragLeave(member.userId, status, $event)"
+                  @drop.prevent="onDrop(member.userId, status)"
                 >
                   <ItemCard
-                    v-for="item in getMemberItems(
-                      member.userId,
-                      status
-                    )"
+                    v-for="item in getMemberItems(member.userId, status)"
                     :key="item.id"
                     :item="item"
                     :member-id="member.userId"
                     :status="status"
-
-                    :can-edit="
-                      isAdmin ||
-                      member.userId === currentUserId
-                    "
-
-                    :draggable-item="
-                      isAdmin ||
-                      member.userId === currentUserId
-                    "
-
-                    :is-copying="
-                      Boolean(
-                        copyingItemIds[item.id]
-                      )
-                    "
-
+                    :can-edit="isAdmin || member.userId === currentUserId"
+                    :draggable-item="isAdmin || member.userId === currentUserId"
+                    :is-copying="Boolean(copyingItemIds[item.id])"
                     @drag-start="onItemDragStart"
                     @drag-end="onItemDragEnd"
-
-                    @copy-week="
-                      (uid, s, id, dir) =>
-                        $emit(
-                          'copy-item-week',
-                          uid,
-                          s,
-                          id,
-                          dir
-                        )
-                    "
+                    @copy-week="(uid, s, id, dir) => $emit('copy-item-week', uid, s, id, dir)"
                   />
 
-                  <div
-                    v-if="
-                      !getMemberItems(
-                        member.userId,
-                        status
-                      ).length
-                    "
-                    class="empty-note"
-                  >
+                  <div v-if="!getMemberItems(member.userId, status).length" class="empty-note">
                     No {{ STATUS_LABELS[status] }} items
                   </div>
                 </div>
               </td>
 
-
               <!-- Weekly Report -->
               <td class="weekly-report-col">
                 <WeeklyReportCell
-                  :report-text="
-                    getWeeklyReport(
-                      member.userId
-                    )
-                  "
-
+                  :report-text="getWeeklyReport(member.userId)"
                   :editable="isAdmin || member.userId === currentUserId"
-
-                  :saving="
-                    Boolean(
-                      weeklyReportSavingIds[
-                        member.userId
-                      ]
-                    )
-                  "
-
-                  :pending-items="
-                    getMemberItems(
-                      member.userId,
-                      'pending'
-                    )
-                  "
-
-                  :processing-items="
-                    getMemberItems(
-                      member.userId,
-                      'processing'
-                    )
-                  "
-
-                  :done-items="
-                    getMemberItems(
-                      member.userId,
-                      'done'
-                    )
-                  "
-                  @submit="handleWeeklyReportSubmit(member.userId,$event)"
+                  :saving="Boolean(weeklyReportSavingIds[member.userId])"
+                  :pending-items="getMemberItems(member.userId, 'pending')"
+                  :processing-items="getMemberItems(member.userId, 'processing')"
+                  :done-items="getMemberItems(member.userId, 'done')"
+                  @submit="handleWeeklyReportSubmit(member.userId, $event)"
                 />
               </td>
             </tr>
@@ -247,151 +126,102 @@ import { ref } from "vue";
 import ItemCard from "./ItemCard.vue";
 import WeeklyReportCell from "./WeeklyReportCell.vue";
 
-import {
-  STATUS_KEYS,
-  STATUS_LABELS
-} from "../constants/index.js";
-
+import { STATUS_KEYS, STATUS_LABELS } from "../constants/index.js";
 
 const props = defineProps({
   boardTitle: {
     type: String,
-    default: ""
+    default: "",
   },
 
   members: {
     type: Array,
-    required: true
+    required: true,
   },
 
   getMemberItems: {
     type: Function,
-    required: true
+    required: true,
   },
 
   getWeeklyReport: {
     type: Function,
-    required: true
+    required: true,
   },
 
   currentUserId: {
     type: String,
-    default: ""
+    default: "",
   },
 
   isAdmin: {
     type: Boolean,
-    default: false
+    default: false,
   },
 
   copyingItemIds: {
     type: Object,
-    default: () => ({})
+    default: () => ({}),
   },
 
   weeklyReportSavingIds: {
     type: Object,
-    default: () => ({})
-  }
+    default: () => ({}),
+  },
 });
 
-
-const emit = defineEmits([
-  "edit-member",
-  "drop-item",
-  "move-member-up",
-  "copy-item-week",
-  "save-weekly-report"
-]);
-
+const emit = defineEmits(["edit-member", "drop-item", "move-member-up", "copy-item-week", "save-weekly-report"]);
 
 const dragPayload = ref(null);
 const dragOverKey = ref("");
 
-
 function canDropTo(userId) {
-  return (
-    props.isAdmin ||
-    userId === props.currentUserId
-  );
+  return props.isAdmin || userId === props.currentUserId;
 }
-
 
 function onItemDragStart(payload) {
   dragPayload.value = payload;
 }
-
 
 function onItemDragEnd() {
   dragPayload.value = null;
   dragOverKey.value = "";
 }
 
-function handleWeeklyReportSubmit(
-  ownerId,
-  reportText
-) {
-  emit(
-    "save-weekly-report",
-    ownerId,
-    reportText
-  );
+function handleWeeklyReportSubmit(ownerId, reportText) {
+  emit("save-weekly-report", ownerId, reportText);
 }
 
 function onDragOver(userId, status) {
-  if (
-    !dragPayload.value ||
-    !canDropTo(userId)
-  ) {
+  if (!dragPayload.value || !canDropTo(userId)) {
     return;
   }
 
-  dragOverKey.value =
-    userId + "|" + status;
+  dragOverKey.value = userId + "|" + status;
 }
 
-
-function onDragLeave(
-  userId,
-  status,
-  event
-) {
-  const key =
-    userId + "|" + status;
+function onDragLeave(userId, status, event) {
+  const key = userId + "|" + status;
 
   if (dragOverKey.value !== key) {
     return;
   }
 
-  if (
-    event.relatedTarget &&
-    event.currentTarget.contains(
-      event.relatedTarget
-    )
-  ) {
+  if (event.relatedTarget && event.currentTarget.contains(event.relatedTarget)) {
     return;
   }
 
   dragOverKey.value = "";
 }
 
-
-function onDrop(
-  userId,
-  status
-) {
+function onDrop(userId, status) {
   dragOverKey.value = "";
 
   if (!dragPayload.value) {
     return;
   }
 
-  emit(
-    "drop-item",
-    dragPayload.value,
-    userId,
-    status
-  );
+  emit("drop-item", dragPayload.value, userId, status);
 
   dragPayload.value = null;
 }

@@ -18,7 +18,10 @@
           <input
             id="yearInput"
             class="form-control"
-            type="number" min="2000" max="2100" step="1"
+            type="number"
+            min="2000"
+            max="2100"
+            step="1"
             :value="state.year"
             @change="$emit('year-change', $event.target.value)"
           />
@@ -32,7 +35,10 @@
               title="Previous Week"
               aria-label="Switch to previous week"
               :disabled="!canGoPreviousWeek"
-              @click="switchWeek(-1)">‹</button>
+              @click="switchWeek(-1)"
+            >
+              ‹
+            </button>
             <select
               id="weekSelect"
               class="form-select"
@@ -47,7 +53,10 @@
               title="Next Week"
               aria-label="Switch to next week"
               :disabled="!canGoNextWeek"
-              @click="switchWeek(1)">›</button>
+              @click="switchWeek(1)"
+            >
+              ›
+            </button>
           </div>
         </div>
         <div class="form-group date-group">
@@ -62,17 +71,13 @@
           <label>&nbsp;</label>
           <div class="actions">
             <button class="btn btn-outline-primary" type="button" @click="$emit('export-excel')">Export Excel</button>
-            <button
-              v-if="isAdmin"
-              class="btn btn-outline-danger"
-              type="button"
-              @click="$emit('clear-week')"
-            >Clear Current Week</button>
+            <button v-if="isAdmin" class="btn btn-outline-danger" type="button" @click="$emit('clear-week')">
+              Clear Current Week
+            </button>
           </div>
         </div>
 
         <div v-if="isAdmin" class="import-panel">
-          
           <div class="import-controls">
             <div class="import-panel-heading">
               <strong>One-click Import (by Member)</strong>
@@ -85,11 +90,7 @@
                 :value="importState.ownerId"
                 @change="$emit('import-owner-change', $event.target.value)"
               >
-                <option
-                  v-for="member in members"
-                  :key="member.userId"
-                  :value="member.userId"
-                >
+                <option v-for="member in members" :key="member.userId" :value="member.userId">
                   {{ member.displayName }}
                 </option>
               </select>
@@ -117,11 +118,7 @@
                 :value="importState.sourceWeekKey"
                 @change="$emit('import-source-week-change', $event.target.value)"
               >
-                <option
-                  v-for="week in importWeekOptions"
-                  :key="week.key"
-                  :value="week.key"
-                >
+                <option v-for="week in importWeekOptions" :key="week.key" :value="week.key">
                   {{ week.label }}
                 </option>
               </select>
@@ -136,19 +133,15 @@
                   importSaving ||
                   !importState.ownerId ||
                   !importState.sourceWeekKey ||
-                  (
-                    Number(importState.sourceYear) === Number(state.year) &&
-                    importState.sourceWeekKey === state.weekKey
-                  )
+                  (Number(importState.sourceYear) === Number(state.year) && importState.sourceWeekKey === state.weekKey)
                 "
                 @click="$emit('copy-member-week')"
               >
                 {{ importSaving ? "Importing..." : "Import This Member" }}
               </button>
             </div>
+          </div>
         </div>
-      </div>
-
       </div>
     </div>
   </section>
@@ -157,31 +150,36 @@
 <script setup>
 import { computed } from "vue";
 const props = defineProps({
-  teams:            { type: Array,   required: true },
-  state:            { type: Object,  required: true },
-  weekOptions:      { type: Array,   required: true },
-  members:          { type: Array,   default: () => [] },
-  importState:      { type: Object,  required: true },
-  importWeekOptions:{ type: Array,   default: () => [] },
-  importSaving:     { type: Boolean, default: false },
-  startDateDisplay: { type: String,  default: "" },
-  endDateDisplay:   { type: String,  default: "" },
-  isAdmin:          { type: Boolean, default: false }
+  teams: { type: Array, required: true },
+  state: { type: Object, required: true },
+  weekOptions: { type: Array, required: true },
+  members: { type: Array, default: () => [] },
+  importState: { type: Object, required: true },
+  importWeekOptions: { type: Array, default: () => [] },
+  importSaving: { type: Boolean, default: false },
+  startDateDisplay: { type: String, default: "" },
+  endDateDisplay: { type: String, default: "" },
+  isAdmin: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(["team-change", "year-change", "week-change", "export-excel", "clear-week", "import-owner-change","import-source-year-change","import-source-week-change","copy-member-week"]);
+const emit = defineEmits([
+  "team-change",
+  "year-change",
+  "week-change",
+  "export-excel",
+  "clear-week",
+  "import-owner-change",
+  "import-source-year-change",
+  "import-source-week-change",
+  "copy-member-week",
+]);
 
-const selectedWeekIndex = computed(() =>
-  props.weekOptions.findIndex(week => week.key === props.state.weekKey)
-);
+const selectedWeekIndex = computed(() => props.weekOptions.findIndex((week) => week.key === props.state.weekKey));
 
-const canGoPreviousWeek = computed(() =>
-  selectedWeekIndex.value > 0
-);
+const canGoPreviousWeek = computed(() => selectedWeekIndex.value > 0);
 
-const canGoNextWeek = computed(() =>
-  selectedWeekIndex.value >= 0 &&
-  selectedWeekIndex.value < props.weekOptions.length - 1
+const canGoNextWeek = computed(
+  () => selectedWeekIndex.value >= 0 && selectedWeekIndex.value < props.weekOptions.length - 1
 );
 
 function switchWeek(offset) {

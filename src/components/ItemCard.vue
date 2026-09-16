@@ -9,7 +9,10 @@
     @mouseleave="hidePreview"
   >
     <div class="item-top">
-      <div class="item-title"><span class="project-title">{{ item.project_name || "" }} - </span><span class="work_item-title">{{ item.work_item || "" }}</span></div>
+      <div class="item-title">
+        <span class="project-title">{{ item.project_name || "" }} - </span
+        ><span class="work_item-title">{{ item.work_item || "" }}</span>
+      </div>
       <div v-if="canEdit" class="item-actions">
         <button
           class="btn btn-light btn-sm icon-btn"
@@ -18,7 +21,9 @@
           aria-label="Copy to previous week"
           :disabled="isCopying"
           @click.stop="$emit('copy-week', memberId, status, item.id, -1)"
-        >‹</button>
+        >
+          ‹
+        </button>
         <button
           class="btn btn-light btn-sm icon-btn"
           type="button"
@@ -26,7 +31,9 @@
           aria-label="Copy to next week"
           :disabled="isCopying"
           @click.stop="$emit('copy-week', memberId, status, item.id, 1)"
-        >›</button>
+        >
+          ›
+        </button>
       </div>
       <span v-else class="tag">Readonly</span>
     </div>
@@ -48,7 +55,8 @@
         ref="previewEl"
         class="item-preview"
         :class="{ 'is-preview-visible': previewVisible, 'is-flipped': arrowFlipped }"
-        :style="{ ...previewStyle, '--arrow-left': arrowLeft + 'px' }">
+        :style="{ ...previewStyle, '--arrow-left': arrowLeft + 'px' }"
+      >
         <div class="item-preview-scroll">
           <div class="preview-title">{{ item.work_item || "Untitled Work Item" }}</div>
           <template v-if="!item.tasks.length">
@@ -59,9 +67,7 @@
               <b>{{ task.task_name || "Untitled Task" }}</b>
               <div>{{ truncate(task.description || task.remark_blocker || "", 80) }}</div>
             </div>
-            <div class="preview-task" v-if="item.tasks.length > 4">
-              {{ item.tasks.length - 4 }} more task(s)...
-            </div>
+            <div class="preview-task" v-if="item.tasks.length > 4">{{ item.tasks.length - 4 }} more task(s)...</div>
           </template>
         </div>
       </div>
@@ -75,27 +81,27 @@ import { HOUR_KEYS, WEEKDAY_LABELS } from "../constants/index.js";
 import { truncate } from "../utils/helpers.js";
 
 const props = defineProps({
-  item:          { type: Object,  required: true },
-  memberId:      { type: String,  required: true },
-  status:        { type: String,  required: true },
-  canEdit:       { type: Boolean, default: false },
+  item: { type: Object, required: true },
+  memberId: { type: String, required: true },
+  status: { type: String, required: true },
+  canEdit: { type: Boolean, default: false },
   draggableItem: { type: Boolean, default: false },
-  isCopying:     { type: Boolean, default: false }
+  isCopying: { type: Boolean, default: false },
 });
 const emit = defineEmits(["drag-start", "drag-end", "copy-week"]);
 
-const isDragging      = ref(false);
-const previewVisible  = ref(false);
-const previewEl       = ref(null);
-const previewStyle    = reactive({ top: "0px", left: "0px" });
+const isDragging = ref(false);
+const previewVisible = ref(false);
+const previewEl = ref(null);
+const previewStyle = reactive({ top: "0px", left: "0px" });
 
 const priorityClass = computed(() => `priority-${String(props.item.priority || "low").toLowerCase()}`);
 
 // 每天工时 tag，只展示 > 0 的天，避免卡片信息过密
 const hourTags = computed(() =>
-  HOUR_KEYS
-    .map((key, idx) => ({ label: WEEKDAY_LABELS[idx], value: Number(props.item.hours?.[key]) || 0 }))
-    .filter(tag => tag.value > 0)
+  HOUR_KEYS.map((key, idx) => ({ label: WEEKDAY_LABELS[idx], value: Number(props.item.hours?.[key]) || 0 })).filter(
+    (tag) => tag.value > 0
+  )
 );
 
 const arrowLeft = ref(22);
@@ -105,17 +111,17 @@ async function showPreview(event) {
   previewVisible.value = true;
   await nextTick();
 
-  const card    = event.currentTarget.getBoundingClientRect();
+  const card = event.currentTarget.getBoundingClientRect();
   const preview = previewEl.value?.getBoundingClientRect();
   if (!preview) return;
 
   const GAP = 8;
-  const vw  = window.innerWidth;
-  const vh  = window.innerHeight;
-  const pw  = preview.width  || 420;
-  const ph  = preview.height || 200;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const pw = preview.width || 420;
+  const ph = preview.height || 200;
 
-  let top  = card.bottom + GAP;
+  let top = card.bottom + GAP;
   let left = card.left;
 
   const flipped = top + ph > vh - 8;
@@ -125,7 +131,7 @@ async function showPreview(event) {
   if (left + pw > vw - 8) left = vw - pw - 8;
   if (left < 8) left = 8;
 
-  previewStyle.top  = `${Math.round(top)}px`;
+  previewStyle.top = `${Math.round(top)}px`;
   previewStyle.left = `${Math.round(left)}px`;
   const cardCenterX = card.left + card.width / 2;
   arrowLeft.value = Math.round(Math.min(Math.max(cardCenterX - left, 16), pw - 24));
