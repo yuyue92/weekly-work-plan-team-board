@@ -223,7 +223,7 @@ body {
 
 .import-controls {
   display: grid;
-  grid-template-columns: 240px 200px 120px 240px 160px;
+  grid-template-columns: 220px 140px 200px 120px 240px 160px;
   align-items: end;
   gap: 10px;
   width: 100%;
@@ -237,6 +237,8 @@ body {
 .import-member-group {
   min-width: 0;
 }
+
+.import-status-group {min-width: 0;}
 
 .import-year-group {
   min-width: 0;
@@ -1330,7 +1332,8 @@ table.tasks-table {
 @media (max-width: 1200px) {
   .import-controls {
     grid-template-columns:
-      minmax(180px, 1fr)
+      minmax(160px, 1fr)
+      minmax(120px, 0.8fr)
       120px
       minmax(260px, 1.5fr);
   }

@@ -1,7 +1,8 @@
 import { reactive, ref, computed } from "vue";
 import ExcelJS from "exceljs";
 import { supabase } from "../lib/supabase.js";
-import { STATUS_KEYS, STATUS_LABELS, HOUR_KEYS, WEEKDAY_LABELS } from "../constants/index.js";
+import { STATUS_KEYS, STATUS_LABELS, HOUR_KEYS, WEEKDAY_LABELS, ALL_MEMBERS_VALUE } from "../constants/index.js";
+
 import {
   buildWorkWeeks,
   getDefaultWeekKey,
@@ -73,6 +74,7 @@ const importState = reactive({
   ownerId: "",
   sourceYear: state.year,
   sourceWeekKey: "",
+  statusFilter:  "all" // "all" | "pending" | "processing" | "done"
 });
 const importWeekOptions = ref([]);
 const importSaving = ref(false);
@@ -105,9 +107,11 @@ export function useBoardStore() {
   }
 
   function resetImportDefaults() {
-    if (!membersData.value.some((member) => member.userId === importState.ownerId)) {
+    const ownerStillValid = importState.ownerId === ALL_MEMBERS_VALUE ||membersData.value.some(member => member.userId === importState.ownerId);
+    if (!ownerStillValid) {
       importState.ownerId = membersData.value[0]?.userId || "";
     }
+    if (!importState.statusFilter) importState.statusFilter = "all";
 
     const targetWeek = weekOptions.value.find((week) => week.key === state.weekKey);
 
@@ -135,6 +139,9 @@ export function useBoardStore() {
 
   function onImportOwnerChange(userId) {
     importState.ownerId = userId;
+  }
+  function onImportStatusChange(status) {
+    importState.statusFilter = status || "all";
   }
 
   function onImportSourceYearChange(rawValue) {
@@ -657,6 +664,7 @@ export function useBoardStore() {
     copyingItemIds[itemId] = true;
     try {
       const payload = cloneItem(item);
+      payload.tasks = []; // 复制到别的周时不带 Task：Task 是当周要做的事，每周都要重新填写，不能沿用上一周的
       const { error } = await supabase.rpc("save_work_item_with_tasks", {
         p_work_item: itemToRow(payload, state.teamId, matched.year, matched.week.key),
         p_tasks: buildTaskPayload(payload.tasks),
@@ -704,14 +712,39 @@ export function useBoardStore() {
   }
 
   // ── 按成员复制某一周到当前周（仅 admin）──────────
+  // 计算某个成员在目标周、指定 status 范围内是否已有数据（决定要不要提示"会先清空"）
+  function memberHasTargetItems(userId, statusFilter) {
+    const statuses = statusFilter === "all" ? STATUS_KEYS : [statusFilter];
+    return statuses.reduce((total, status) => total + getMemberItems(userId, status).length, 0) > 0;
+  }
+
+  // 单个成员的一次 RPC 调用，返回本次实际复制的 Work Item 数
+  async function copyOneMemberWeek(member, sourceWeek, targetWeek, statusFilter) {
+    const replaceExisting = memberHasTargetItems(member.userId, statusFilter);
+    const { data, error } = await supabase.rpc("copy_member_week", {
+      p_team_id:          state.teamId,
+      p_owner_id:         member.userId,
+      p_source_year:      Number(importState.sourceYear),
+      p_source_week_key:  importState.sourceWeekKey,
+      p_target_year:      Number(state.year),
+      p_target_week_key:  state.weekKey,
+      p_shift_days:       calendarDayDiff(sourceWeek.startDate, targetWeek.startDate),
+      p_replace_existing: replaceExisting,
+      // null / 不传 = 不按状态过滤，整周复制（兼容旧行为）；否则只复制该状态的 Work Item
+      p_status_filter:    statusFilter === "all" ? null : statusFilter
+    });
+    if (error) throw error;
+    return Number(data?.copied_work_items || 0);
+  }
+
   async function copySelectedMemberWeek() {
     if (boardLoading.value || importSaving.value) return;
-
-    const member = membersData.value.find((item) => item.userId === importState.ownerId);
     const sourceWeek = importWeekOptions.value.find((item) => item.key === importState.sourceWeekKey);
     const targetWeek = weekOptions.value.find((item) => item.key === state.weekKey);
+    const isAllMembers = importState.ownerId === ALL_MEMBERS_VALUE;
+    const targetMembers = isAllMembers ? membersData.value : [membersData.value.find(item => item.userId === importState.ownerId)].filter(Boolean);
 
-    if (!member || !sourceWeek || !targetWeek) {
+    if (!targetMembers.length || !sourceWeek || !targetWeek) {
       showToast("Please select a source week and a member to import.", "info");
       return;
     }
@@ -721,36 +754,48 @@ export function useBoardStore() {
       return;
     }
 
-    const targetItemCount = STATUS_KEYS.reduce(
-      (total, status) => total + getMemberItems(member.userId, status).length,
-      0
-    );
+    const statusFilter = importState.statusFilter || "all";
+    const statusLabel  = statusFilter === "all" ? "All Status" : STATUS_LABELS[statusFilter];
+    const affectedCount = targetMembers.filter(m => memberHasTargetItems(m.userId, statusFilter)).length;
 
-    const replaceExisting = targetItemCount > 0;
-    const message = replaceExisting
-      ? `"${member.displayName}" already has ${targetItemCount} Work Item(s) this week. Continuing will clear this member's current week data first, then import from ${sourceWeek.label}. Continue?`
-      : `Copy "${member.displayName}"'s data from ${sourceWeek.label} to the current week?`;
+    const message = isAllMembers
+      ? `Import "${statusLabel}" items for All ${targetMembers.length} member(s) from ${sourceWeek.label}?` +
+        (affectedCount > 0
+          ? ` ${affectedCount} member(s) already have matching data this week — it will be cleared first.`
+          : "")
+      : (
+        affectedCount > 0
+          ? `"${targetMembers[0].displayName}" already has matching "${statusLabel}" Work Item(s) this week. Continuing will clear this member's current week data (${statusLabel}) first, then import from ${sourceWeek.label}. Continue?`
+          : `Copy "${targetMembers[0].displayName}"'s "${statusLabel}" data from ${sourceWeek.label} to the current week?`
+      );
 
     if (!confirm(message)) return;
 
     importSaving.value = true;
+    let totalCopied = 0;
+    const failedMembers = [];
     try {
-      const { data, error } = await supabase.rpc("copy_member_week", {
-        p_team_id: state.teamId,
-        p_owner_id: member.userId,
-        p_source_year: Number(importState.sourceYear),
-        p_source_week_key: importState.sourceWeekKey,
-        p_target_year: Number(state.year),
-        p_target_week_key: state.weekKey,
-        p_shift_days: calendarDayDiff(sourceWeek.startDate, targetWeek.startDate),
-        p_replace_existing: replaceExisting,
-      });
-      if (error) throw error;
+      // 逐个成员顺序调用（不并发），避免同一周数据被并发写入互相踩踏
+      for (const member of targetMembers) {
+        try {
+          totalCopied += await copyOneMemberWeek(member, sourceWeek, targetWeek, statusFilter);
+        } catch (err) {
+          failedMembers.push(member.displayName);
+        }
+      }
 
       await loadBoard();
-      showToast(`Imported ${Number(data?.copied_work_items || 0)} Work Item(s) for ${member.displayName}`, "success");
     } catch (err) {
-      showToast("Import failed: " + (err.message || String(err)), "error");
+      if (failedMembers.length) {
+        showToast(`Imported ${totalCopied} Work Item(s), but failed for: ${failedMembers.join(", ")}`, "error");
+      } else {
+        showToast(
+          isAllMembers
+            ? `Imported ${totalCopied} Work Item(s) for ${targetMembers.length} member(s)`
+            : `Imported ${totalCopied} Work Item(s) for ${targetMembers[0].displayName}`,
+          "success"
+        );
+      }
     } finally {
       importSaving.value = false;
     }
@@ -992,6 +1037,7 @@ export function useBoardStore() {
     onImportOwnerChange,
     onImportSourceYearChange,
     onImportSourceWeekChange,
+    onImportStatusChange,
     copySelectedMemberWeek,
     exportExcel,
     showToast,

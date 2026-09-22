@@ -90,9 +90,23 @@
                 :value="importState.ownerId"
                 @change="$emit('import-owner-change', $event.target.value)"
               >
+                <option :value="ALL_MEMBERS_VALUE">All</option>
                 <option v-for="member in members" :key="member.userId" :value="member.userId">
                   {{ member.displayName }}
                 </option>
+              </select>
+            </div>
+
+            <div class="form-group import-status-group">
+              <label for="importStatusSelect">Status</label>
+              <select
+                id="importStatusSelect"
+                class="form-select"
+                :value="importState.statusFilter"
+                @change="$emit('import-status-change', $event.target.value)"
+              >
+                <option value="all">All</option>
+                <option v-for="key in STATUS_KEYS" :key="key" :value="key">{{ STATUS_LABELS[key] }}</option>
               </select>
             </div>
 
@@ -137,7 +151,7 @@
                 "
                 @click="$emit('copy-member-week')"
               >
-                {{ importSaving ? "Importing..." : "Import This Member" }}
+                {{ importSaving ? "Importing..." : (importState.ownerId === ALL_MEMBERS_VALUE ? "Import All Members" : "Import This Member") }}
               </button>
             </div>
           </div>
@@ -149,6 +163,8 @@
 
 <script setup>
 import { computed } from "vue";
+import { ALL_MEMBERS_VALUE, STATUS_KEYS, STATUS_LABELS } from "../constants/index.js";
+
 const props = defineProps({
   teams: { type: Array, required: true },
   state: { type: Object, required: true },
@@ -162,17 +178,8 @@ const props = defineProps({
   isAdmin: { type: Boolean, default: false },
 });
 
-const emit = defineEmits([
-  "team-change",
-  "year-change",
-  "week-change",
-  "export-excel",
-  "clear-week",
-  "import-owner-change",
-  "import-source-year-change",
-  "import-source-week-change",
-  "copy-member-week",
-]);
+const emit = defineEmits(["team-change", "year-change", "week-change", "export-excel", "clear-week", "import-owner-change","import-source-year-change","import-source-week-change","import-status-change","copy-member-week"]);
+
 
 const selectedWeekIndex = computed(() => props.weekOptions.findIndex((week) => week.key === props.state.weekKey));
 

@@ -48,6 +48,7 @@
         @import-owner-change="onImportOwnerChange"
         @import-source-year-change="onImportSourceYearChange"
         @import-source-week-change="onImportSourceWeekChange"
+        @import-status-change="onImportStatusChange"
         @copy-member-week="copySelectedMemberWeek"
       />
       <div class="board-area">
@@ -166,6 +167,7 @@ const {
   onImportOwnerChange,
   onImportSourceYearChange,
   onImportSourceWeekChange,
+  onImportStatusChange,
   copySelectedMemberWeek,
   exportExcel,
 } = useBoardStore();

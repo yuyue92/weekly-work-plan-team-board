@@ -17,3 +17,6 @@ export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 // Work Item 每天的工时字段 key，和 work_items 表里的 mon_hours ~ fri_hours 一一对应
 export const HOUR_KEYS = ["mon", "tue", "wed", "thu", "fri"];
+
+// “按成员一键导入”面板里 Member 下拉的 “All” 选项取值（哨兵值，不是真实 userId）
+export const ALL_MEMBERS_VALUE = "__ALL__";
