@@ -664,7 +664,7 @@ export function useBoardStore() {
     copyingItemIds[itemId] = true;
     try {
       const payload = cloneItem(item);
-      payload.tasks = []; // 复制到别的周时不带 Task：Task 是当周要做的事，每周都要重新填写，不能沿用上一周的
+      payload.hours = Object.fromEntries(HOUR_KEYS.map((key) => [key, 0])); // 保留 Task，仅清零五天工时
       const { error } = await supabase.rpc("save_work_item_with_tasks", {
         p_work_item: itemToRow(payload, state.teamId, matched.year, matched.week.key),
         p_tasks: buildTaskPayload(payload.tasks),
